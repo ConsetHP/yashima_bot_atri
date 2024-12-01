@@ -228,42 +228,18 @@ def query_wordcloud_generatable_channel_ids(start_time: datetime, end_time: date
     查找符合生成词云条件的所有子频道
     """
     threshold = get_config()["wordcloud"]["generation_threshold"]
+    blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
     query = (
         GuildMessageRecord.select(GuildMessageRecord.channel_id, fn.COUNT(
             GuildMessageRecord.channel_id).alias("cnt"))
         .where((GuildMessageRecord.recv_time > start_time)
-               & (GuildMessageRecord.recv_time < end_time))
+               & (GuildMessageRecord.recv_time < end_time)
+               & (GuildMessageRecord.user_id.not_in(blacklist_users)))  # 排除黑名单用户
         .group_by(GuildMessageRecord.channel_id)
-        .having(fn.COUNT(GuildMessageRecord.channel_id) > threshold)  # 第一次阈值检查
+        .having(fn.COUNT(GuildMessageRecord.channel_id) > threshold)  # 阈值检查
     )
-    pre_lst = [model.channel_id for model in query]
-    return [check_guild_messages(i, start_time, end_time) for i in pre_lst if check_guild_messages(i, start_time, end_time) is not None]
-
-
-def check_guild_messages(channel_id: int, start_time: datetime, end_time: datetime) -> int:
-    """
-    第二次阈值检查，确保在加载了用户黑名单后消息数量仍能达到阈值
-    """
-    import operator
-
-    expressions = [
-        (GuildMessageRecord.recv_time > start_time),
-        (GuildMessageRecord.recv_time < end_time),
-    ]
-    expressions.append(GuildMessageRecord.channel_id == channel_id)
-    blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
-    if blacklist_users:
-        expressions.append(GuildMessageRecord.user_id.not_in(blacklist_users))
-    query = GuildMessageRecord.select().where(reduce(operator.and_, expressions))
-    messages = [model.content for model in query]
-    threshold = get_config()["wordcloud"]["generation_threshold"]
-    disabled_channels = get_config()["wordcloud"]["disabled_channels"]
-    if len(messages) < threshold:
-        return None
-    for disabled_channel in disabled_channels:
-        if channel_id == disabled_channel:
-            return None
-    return channel_id
+    channels = [model.channel_id for model in query]
+    return channels
 
 
 async def get_wordcloud_by_time(
