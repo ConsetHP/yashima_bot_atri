@@ -284,9 +284,9 @@ async def get_wordcloud_by_time(
         blacklist_channels = get_config()["wordcloud"]["blacklist_channels"]
         expressions.append(
             GuildMessageRecord.channel_id.not_in(blacklist_channels))
-    blacklist = get_config()["wordcloud"]["blacklist_user_ids"]
-    if blacklist:
-        expressions.append(GuildMessageRecord.user_id.not_in(blacklist))
+    blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
+    if blacklist_users:
+        expressions.append(GuildMessageRecord.user_id.not_in(blacklist_users))
 
     query = GuildMessageRecord.select().where(reduce(operator.and_, expressions))
     messages = [model.content for model in query]
@@ -298,9 +298,9 @@ async def get_wordcloud_by_time(
             (GuildMessageRecord.recv_time > start_time),
             (GuildMessageRecord.recv_time < end_time),
         ]
-        if blacklist:
+        if blacklist_users:
             special_expressions.append(
-                GuildMessageRecord.user_id.not_in(blacklist))
+                GuildMessageRecord.user_id.not_in(blacklist_users))
         special_expressions.append(
             GuildMessageRecord.channel_id == anti_repeat_channels)
         query = GuildMessageRecord.select().where(
