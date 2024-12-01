@@ -145,7 +145,7 @@ async def resend_system_recalled_img_handle(matcher: Matcher, event: GuildMessag
 
 async def yesterday_wordcloud_handle(matcher: Matcher, event: GuildMessageEvent, args: Message = CommandArg()):
     yesterday = datetime.now() - timedelta(days=1)
-    start_time = yesterday.replace(hour=0, minute=10, second=0, microsecond=0)
+    start_time = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
     end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
     channel_id = args.extract_plain_text()
     await matcher.send("ワードクラウドをジェネレートしますね。検索中、検索中......🔍")
@@ -173,7 +173,7 @@ async def yesterday_wordcloud_job():
     try:
         yesterday = datetime.now() - timedelta(days=1)
         start_time = yesterday.replace(
-            hour=0, minute=10, second=0, microsecond=0)
+            hour=0, minute=0, second=0, microsecond=0)
         end_time = yesterday.replace(
             hour=23, minute=59, second=59, microsecond=0)
         channels = query_wordcloud_generatable_channel_ids(
