@@ -251,9 +251,9 @@ def check_guild_messages(channel_id: int, start_time: datetime, end_time: dateti
         (GuildMessageRecord.recv_time < end_time),
     ]
     expressions.append(GuildMessageRecord.channel_id == channel_id)
-    blacklist = get_config()["wordcloud"]["blacklist_user_ids"]
-    if blacklist:
-        expressions.append(GuildMessageRecord.user_id.not_in(blacklist))
+    blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
+    if blacklist_users:
+        expressions.append(GuildMessageRecord.user_id.not_in(blacklist_users))
     query = GuildMessageRecord.select().where(reduce(operator.and_, expressions))
     messages = [model.content for model in query]
     threshold = get_config()["wordcloud"]["generation_threshold"]
