@@ -8,7 +8,7 @@ from nonebot_plugin_guild_patch import GuildMessageEvent
 from tomlkit.toml_document import TOMLDocument
 
 
-# region config
+# region config start
 def load_config() -> TOMLDocument:
     with open("config/yashima_config.toml", "r", encoding="utf-8") as file:
         content = file.read()
@@ -27,9 +27,7 @@ def reload_config() -> TOMLDocument:
     global bot_config
     bot_config = load_config()
     return bot_config
-
-
-# endregion config
+# region config end
 
 
 def at_user(event: GuildMessageEvent) -> MessageSegment:

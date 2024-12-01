@@ -24,7 +24,7 @@ def init_database(db_path: str):
         'synchronous': 0})
     db.initialize(_db)
     _db.connect()
-    _db.create_tables(models=[ClockEventLog, GuildMessageRecord])
+    _db.create_tables(models=[ClockEventLog, GuildMessageRecord, GuildImgRecord])
 
 
 class BaseModel(Model):
@@ -46,7 +46,9 @@ class ClockEventLog(BaseModel):
     duration = IntegerField(default=0)  # 持续时长，单位分钟
 
     def update_duration(self) -> int:
-        """计算并更新持续时常"""
+        """
+        计算并更新持续时长
+        """
         if not self.start_time or not self.end_time:
             raise ValueError("start or end time is None")
         self.duration = int((self.end_time - self.start_time).total_seconds() / 60)
@@ -95,3 +97,10 @@ class GuildMessageRecord(BaseModel):
     user_id = CharField()
     content = TextField()
     recv_time = DateTimeField(default=datetime.now, index=True)
+
+
+class GuildImgRecord(GuildMessageRecord):
+    """
+    频道图片url
+    """
+    pass
