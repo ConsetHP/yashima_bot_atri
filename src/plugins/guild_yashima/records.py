@@ -145,7 +145,7 @@ async def resend_system_recalled_img_handle(matcher: Matcher, event: GuildMessag
 
 async def yesterday_wordcloud_handle(matcher: Matcher, event: GuildMessageEvent, args: Message = CommandArg()):
     yesterday = datetime.now() - timedelta(days=1)
-    start_time = yesterday.replace(hour=0, minute=10, second=0, microsecond=0)
+    start_time = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
     end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
     channel_id = args.extract_plain_text()
     await matcher.send("ワードクラウドをジェネレートしますね。検索中、検索中......🔍")
@@ -173,7 +173,7 @@ async def yesterday_wordcloud_job():
     try:
         yesterday = datetime.now() - timedelta(days=1)
         start_time = yesterday.replace(
-            hour=0, minute=10, second=0, microsecond=0)
+            hour=0, minute=0, second=0, microsecond=0)
         end_time = yesterday.replace(
             hour=23, minute=59, second=59, microsecond=0)
         channels = query_wordcloud_generatable_channel_ids(
@@ -228,42 +228,18 @@ def query_wordcloud_generatable_channel_ids(start_time: datetime, end_time: date
     查找符合生成词云条件的所有子频道
     """
     threshold = get_config()["wordcloud"]["generation_threshold"]
+    blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
     query = (
         GuildMessageRecord.select(GuildMessageRecord.channel_id, fn.COUNT(
             GuildMessageRecord.channel_id).alias("cnt"))
         .where((GuildMessageRecord.recv_time > start_time)
-               & (GuildMessageRecord.recv_time < end_time))
+               & (GuildMessageRecord.recv_time < end_time)
+               & (GuildMessageRecord.user_id.not_in(blacklist_users)))  # 排除黑名单用户
         .group_by(GuildMessageRecord.channel_id)
-        .having(fn.COUNT(GuildMessageRecord.channel_id) > threshold)  # 第一次阈值检查
+        .having(fn.COUNT(GuildMessageRecord.channel_id) > threshold)  # 阈值检查
     )
-    pre_lst = [model.channel_id for model in query]
-    return [check_guild_messages(i, start_time, end_time) for i in pre_lst if check_guild_messages(i, start_time, end_time) is not None]
-
-
-def check_guild_messages(channel_id: int, start_time: datetime, end_time: datetime) -> int:
-    """
-    第二次阈值检查，确保在加载了用户黑名单后消息数量仍能达到阈值
-    """
-    import operator
-
-    expressions = [
-        (GuildMessageRecord.recv_time > start_time),
-        (GuildMessageRecord.recv_time < end_time),
-    ]
-    expressions.append(GuildMessageRecord.channel_id == channel_id)
-    blacklist = get_config()["wordcloud"]["blacklist_user_ids"]
-    if blacklist:
-        expressions.append(GuildMessageRecord.user_id.not_in(blacklist))
-    query = GuildMessageRecord.select().where(reduce(operator.and_, expressions))
-    messages = [model.content for model in query]
-    threshold = get_config()["wordcloud"]["generation_threshold"]
-    disabled_channels = get_config()["wordcloud"]["disabled_channels"]
-    if len(messages) < threshold:
-        return None
-    for disabled_channel in disabled_channels:
-        if channel_id == disabled_channel:
-            return None
-    return channel_id
+    channels = [model.channel_id for model in query]
+    return channels
 
 
 async def get_wordcloud_by_time(
@@ -284,41 +260,25 @@ async def get_wordcloud_by_time(
         blacklist_channels = get_config()["wordcloud"]["blacklist_channels"]
         expressions.append(
             GuildMessageRecord.channel_id.not_in(blacklist_channels))
-    blacklist = get_config()["wordcloud"]["blacklist_user_ids"]
-    if blacklist:
-        expressions.append(GuildMessageRecord.user_id.not_in(blacklist))
+    blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
+    if blacklist_users:
+        expressions.append(GuildMessageRecord.user_id.not_in(blacklist_users))
 
     query = GuildMessageRecord.select().where(reduce(operator.and_, expressions))
     messages = [model.content for model in query]
-    anti_repeat_channels = get_config()["wordcloud"]["anti_repeat_channels"]
 
-    # 针对老干部读报间处理，目前不是很优雅，未来可能会修改
-    if anti_repeat_channels and channel_id == 0:
-        special_expressions = [
-            (GuildMessageRecord.recv_time > start_time),
-            (GuildMessageRecord.recv_time < end_time),
-        ]
-        if blacklist:
-            special_expressions.append(
-                GuildMessageRecord.user_id.not_in(blacklist))
-        special_expressions.append(
-            GuildMessageRecord.channel_id == anti_repeat_channels)
-        query = GuildMessageRecord.select().where(
-            reduce(operator.and_, special_expressions))
-        pre_anti_repeat_messages = [model.content for model in query]
-        anti_repeat_messages = []
-        for anti_repeat_msg in pre_anti_repeat_messages:
-            anti_repeat_msg = pre_process(anti_repeat_msg)
-            anti_repeat_msg = anti_repeat_process(anti_repeat_msg)
-            anti_repeat_messages.append(anti_repeat_msg)
-        messages = anti_repeat_messages + messages
-
-    return await get_wordcloud_img(messages)
+    # 全部都用jieba提前分词，可以让最终输入词云库的权重更合理
+    jieba_messages = []
+    for msg in messages:
+        msg = pre_process(msg)
+        msg = anti_repeat_process(msg)
+        jieba_messages.append(msg)
+    return await get_wordcloud_img(jieba_messages)
 
 
 def anti_repeat_process(msg: str):
     """
-    使用jiebafen分词来去除同一条消息内的大量重复词语
+    使用jieba分词来去除同一条消息内的大量重复词语
     """
     words = jieba.analyse.extract_tags(msg)
     message = " ".join(words)
