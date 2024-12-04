@@ -266,35 +266,19 @@ async def get_wordcloud_by_time(
 
     query = GuildMessageRecord.select().where(reduce(operator.and_, expressions))
     messages = [model.content for model in query]
-    anti_repeat_channels = get_config()["wordcloud"]["anti_repeat_channels"]
 
-    # 针对老干部读报间处理，目前不是很优雅，未来可能会修改
-    if anti_repeat_channels and channel_id == 0:
-        special_expressions = [
-            (GuildMessageRecord.recv_time > start_time),
-            (GuildMessageRecord.recv_time < end_time),
-        ]
-        if blacklist_users:
-            special_expressions.append(
-                GuildMessageRecord.user_id.not_in(blacklist_users))
-        special_expressions.append(
-            GuildMessageRecord.channel_id == anti_repeat_channels)
-        query = GuildMessageRecord.select().where(
-            reduce(operator.and_, special_expressions))
-        pre_anti_repeat_messages = [model.content for model in query]
-        anti_repeat_messages = []
-        for anti_repeat_msg in pre_anti_repeat_messages:
-            anti_repeat_msg = pre_process(anti_repeat_msg)
-            anti_repeat_msg = anti_repeat_process(anti_repeat_msg)
-            anti_repeat_messages.append(anti_repeat_msg)
-        messages = anti_repeat_messages + messages
-
-    return await get_wordcloud_img(messages)
+    # 全部都用jieba提前分词，可以让最终输入词云库的权重更合理
+    jieba_messages = []
+    for msg in messages:
+        msg = pre_process(msg)
+        msg = anti_repeat_process(msg)
+        jieba_messages.append(msg)
+    return await get_wordcloud_img(jieba_messages)
 
 
 def anti_repeat_process(msg: str):
     """
-    使用jiebafen分词来去除同一条消息内的大量重复词语
+    使用jieba分词来去除同一条消息内的大量重复词语
     """
     words = jieba.analyse.extract_tags(msg)
     message = " ".join(words)
