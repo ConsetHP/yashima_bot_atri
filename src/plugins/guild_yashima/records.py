@@ -299,6 +299,8 @@ def pre_process(msg: str) -> str:
     # 去除 emoji
     # https://github.com/carpedm20/emoji
     msg = replace_emoji(msg)
+    # 去除磁力链接
+    msg = re.sub(r"magnet:\?[a-zA-Z0-9=&:.%+-]+", "", msg)
     return msg
 
 
