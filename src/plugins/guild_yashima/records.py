@@ -268,11 +268,8 @@ async def get_wordcloud_by_time(
     messages = [model.content for model in query]
 
     # 全部都用jieba提前分词，可以让最终输入词云库的权重更合理
-    jieba_messages = []
-    for msg in messages:
-        msg = pre_process(msg)
-        msg = anti_repeat_process(msg)
-        jieba_messages.append(msg)
+    jieba_messages = [pre_process(msg) for msg in messages]
+    logger.warning(f"测试：{jieba_messages}")
     return await get_wordcloud_img(jieba_messages)
 
 
@@ -301,6 +298,8 @@ def pre_process(msg: str) -> str:
     msg = replace_emoji(msg)
     # 去除磁力链接
     msg = re.sub(r"magnet:\?[a-zA-Z0-9=&:.%+-]+", "", msg)
+    # 防止复读
+    msg = anti_repeat_process(msg)
     return msg
 
 
@@ -324,9 +323,8 @@ def analyse_message(msg: str) -> Dict[str, float]:
 
 def _get_wordcloud_img(messages: List[str]) -> Optional[BytesIO]:
     message = " ".join(messages)
-    # 预处理
-    message = pre_process(message)
     # 分析消息。分词，并统计词频
+    logger.warning(f"测试：{message}")
     frequency = analyse_message(message)
     # 词云参数
     wordcloud_options = {}
