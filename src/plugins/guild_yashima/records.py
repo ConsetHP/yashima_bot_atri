@@ -72,7 +72,7 @@ async def clear_overtime_message_record():
     )
     msg_num = msg_query.execute()
     img_num = img_query.execute()
-    if msg_num > 0 or img_query > 0:
+    if msg_num > 0 or img_num > 0:
         logger.info(f"已删除频道聊天记录{msg_num}条，聊天图片{img_num}条")
 
 
