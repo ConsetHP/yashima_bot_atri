@@ -72,7 +72,7 @@ async def clear_overtime_message_record():
     )
     msg_num = msg_query.execute()
     img_num = img_query.execute()
-    if msg_num > 0 or img_query > 0:
+    if msg_num > 0 or img_num > 0:
         logger.info(f"已删除频道聊天记录{msg_num}条，聊天图片{img_num}条")
 
 
@@ -180,6 +180,11 @@ async def yesterday_wordcloud_job():
             start_time, end_time)
         logger.info(f"以下频道将生成词云：{channels}")
         for channel in channels:
+            # 检查该子频道是否已禁用词云生成
+            disabled_channels = get_config()["wordcloud"]["disabled_channels"]
+            if channel in disabled_channels:
+                continue
+
             logger.info(f"开始生成词云，频道ID:{channel}")
 
             notice = "えっと、そろそろワードクラウドの時間です。検索中、検索中......🔍"
@@ -268,11 +273,7 @@ async def get_wordcloud_by_time(
     messages = [model.content for model in query]
 
     # 全部都用jieba提前分词，可以让最终输入词云库的权重更合理
-    jieba_messages = []
-    for msg in messages:
-        msg = pre_process(msg)
-        msg = anti_repeat_process(msg)
-        jieba_messages.append(msg)
+    jieba_messages = [pre_process(msg) for msg in messages]
     return await get_wordcloud_img(jieba_messages)
 
 
@@ -299,6 +300,10 @@ def pre_process(msg: str) -> str:
     # 去除 emoji
     # https://github.com/carpedm20/emoji
     msg = replace_emoji(msg)
+    # 去除磁力链接
+    msg = re.sub(r"magnet:\?[a-zA-Z0-9=&:.%+-]+", "", msg)
+    # 防止复读
+    msg = anti_repeat_process(msg)
     return msg
 
 
@@ -322,8 +327,6 @@ def analyse_message(msg: str) -> Dict[str, float]:
 
 def _get_wordcloud_img(messages: List[str]) -> Optional[BytesIO]:
     message = " ".join(messages)
-    # 预处理
-    message = pre_process(message)
     # 分析消息。分词，并统计词频
     frequency = analyse_message(message)
     # 词云参数
