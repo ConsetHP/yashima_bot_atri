@@ -24,6 +24,7 @@ disable_channels = [123]  # 不启用的子频道ID列表
 anti_repeat_channels = "" # 暂时弃用
 blacklist_user_ids = ["144115218735425860", "144115218680952989"]  # 词云排除用户
 blacklist_channels = [1]  # 全屏词云排除列表
+blacklist_bot_commands = [" 打卡", " /打卡"]  # 词云排除bot指令
 overall_target_channel = 123  # 全频词云发送子频道ID
 
 [debug]

@@ -27,9 +27,7 @@ from .utils import *
 
 
 async def save_guild_img_url_handle(event: GuildMessageEvent, message: Message = EventMessage()):
-    """
-    保存所有频道的图片url
-    """
+    """保存所有频道的图片url"""
     if message.count("image") == 0:
         return
 
@@ -46,9 +44,7 @@ async def save_guild_img_url_handle(event: GuildMessageEvent, message: Message =
 
 
 async def save_recv_guild_msg_handle(event: GuildMessageEvent):
-    """
-    保存所有频道文本消息
-    """
+    """保存所有频道文本消息"""
     msg = event.get_plaintext()
 
     if len(msg) > 1000 or msg == "":
@@ -77,9 +73,7 @@ async def clear_overtime_message_record():
 
 
 async def resend_pc_unreadable_msg_handle(matcher: Matcher, _: GuildMessageEvent, message: Message = EventMessage()):
-    """
-    解析PC不可读消息并转换发送
-    """
+    """解析PC不可读消息并转换发送"""
     if message.count("json") == 0:
         return
 
@@ -127,9 +121,7 @@ async def resend_pc_unreadable_msg_handle(matcher: Matcher, _: GuildMessageEvent
 
 
 async def resend_system_recalled_img_handle(matcher: Matcher, event: GuildMessageEvent, message: Message = EventMessage()):
-    """
-    发送用户在该频道的最后一次发送的图片的url
-    """
+    """发送用户在该频道的最后一次发送的图片的url"""
     query = (GuildImgRecord
              .select()
              .where((GuildImgRecord.channel_id == event.channel_id) & (GuildImgRecord.user_id == event.get_user_id()))
@@ -229,9 +221,7 @@ async def yesterday_wordcloud_job():
 
 
 def query_wordcloud_generatable_channel_ids(start_time: datetime, end_time: datetime) -> List[int]:
-    """
-    查找符合生成词云条件的所有子频道
-    """
+    """查找符合生成词云条件的所有子频道"""
     threshold = get_config()["wordcloud"]["generation_threshold"]
     blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
     query = (
@@ -250,9 +240,7 @@ def query_wordcloud_generatable_channel_ids(start_time: datetime, end_time: date
 async def get_wordcloud_by_time(
     channel_id: int, start_time: datetime, end_time: datetime
 ) -> Optional[BytesIO]:
-    """
-    channel_id等于0时，查找所有黑名单以外的子频道记录
-    """
+    """channel_id等于0时，查找所有黑名单以外的子频道记录"""
     import operator
 
     expressions = [
@@ -278,9 +266,7 @@ async def get_wordcloud_by_time(
 
 
 def anti_repeat_process(msg: str):
-    """
-    使用jieba分词来去除同一条消息内的大量重复词语
-    """
+    """使用jieba分词来去除同一条消息内的大量重复词语"""
     words = jieba.analyse.extract_tags(msg)
     message = " ".join(words)
     return message
@@ -288,6 +274,8 @@ def anti_repeat_process(msg: str):
 
 def pre_process(msg: str) -> str:
     """对消息进行预处理"""
+    # 去除常见机器人指令
+    msg = remove_bot_command(msg)
     # 去除网址
     # https://stackoverflow.com/a/17773849/9212748
     msg = re.sub(
@@ -305,6 +293,14 @@ def pre_process(msg: str) -> str:
     # 防止复读
     msg = anti_repeat_process(msg)
     return msg
+
+
+def remove_bot_command(msg: str) -> str:
+    """删除用户调用bot指令，例：/打卡"""
+    if get_config()["wordcloud"]["blacklist_bot_commands"]:
+        return "" if msg in get_config()["wordcloud"]["blacklist_bot_commands"] else msg
+    else:
+        return msg
 
 
 def analyse_message(msg: str) -> Dict[str, float]:
