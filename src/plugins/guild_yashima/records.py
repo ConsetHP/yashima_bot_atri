@@ -174,8 +174,7 @@ async def yesterday_wordcloud_job():
         logger.info(f"以下频道将生成词云：{channels}")
         for channel in channels:
             # 检查该子频道是否已禁用词云生成
-            disabled_channels = get_config()["wordcloud"]["disabled_channels"]
-            if channel in disabled_channels:
+            if channel in get_config()["wordcloud"]["disabled_channels"]:
                 continue
 
             logger.info(f"开始生成词云，频道ID:{channel}")
@@ -256,8 +255,7 @@ async def get_wordcloud_by_time(
         blacklist_channels = get_config()["wordcloud"]["blacklist_channels"]
         expressions.append(
             GuildMessageRecord.channel_id.not_in(blacklist_channels))
-    blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
-    if blacklist_users:
+    if blacklist_users := get_config()["wordcloud"]["blacklist_user_ids"]:
         expressions.append(GuildMessageRecord.user_id.not_in(blacklist_users))
 
     query = GuildMessageRecord.select().where(reduce(operator.and_, expressions))
@@ -300,8 +298,8 @@ def pre_process(msg: str) -> str:
 
 def remove_bot_command(msg: str) -> str:
     """删除用户调用bot指令，例：/打卡"""
-    if get_config()["wordcloud"]["blacklist_bot_commands"]:
-        return "" if msg in get_config()["wordcloud"]["blacklist_bot_commands"] else msg
+    if blacklist_bot_commands := get_config()["wordcloud"]["blacklist_bot_commands"]:
+        return "" if msg in blacklist_bot_commands else msg
     else:
         return msg
 
@@ -312,9 +310,9 @@ def analyse_message(msg: str) -> Dict[str, float]:
     分词，并统计词频
     """
     # 设置停用词表
-    if get_config()["wordcloud"]["stopwords_path"]:
+    if stopwords_path := get_config()["wordcloud"]["stopwords_path"]:
         jieba.analyse.set_stop_words(
-            get_config()["wordcloud"]["stopwords_path"])
+            stopwords_path)
     # 加载用户词典
     # if plugin_config.wordcloud_userdict_path:
     #     jieba.load_userdict(str(plugin_config.wordcloud_userdict_path))
