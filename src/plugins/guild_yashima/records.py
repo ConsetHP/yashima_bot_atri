@@ -20,6 +20,7 @@ from nonebot.adapters import Message
 from nonebot.matcher import Matcher
 from nonebot.params import EventMessage, CommandArg
 from nonebot_plugin_apscheduler import scheduler
+from nonebot.adapters.onebot.v11 import ActionFailed
 from wordcloud import WordCloud
 
 from .db import *
@@ -209,6 +210,8 @@ async def yesterday_wordcloud_job():
             )
         else:
             logger.error("全频道词云图片未生成")
+    except ActionFailed as af_ex:
+        logger.error(f"消息风控，词云发送失败：{af_ex}")
     except Exception as ex:
         # 有点哈人，姑且先发送到测试频
         # 得把发送失败后的逻辑改成失败即重试数次
