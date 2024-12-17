@@ -1,6 +1,7 @@
 """
 消息存储、词云等
 有参考 https://github.com/he0119/nonebot-plugin-wordcloud
+TO DO: 将 アトリ 的高性能消息抽象成一个类，方便增加和修改
 """
 import asyncio
 import concurrent.futures
@@ -180,7 +181,7 @@ async def yesterday_wordcloud_job():
             logger.info(f"开始生成词云，频道ID:{channel}")
 
             notice = "えっと、そろそろワードクラウドの時間です。検索中、検索中......🔍"
-            await get_bot().send_guild_channel_msg(
+            await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
                 guild_id=get_active_guild_id(), channel_id=channel, message=notice
             )
 
@@ -188,21 +189,23 @@ async def yesterday_wordcloud_job():
             if image:
                 msg = "ふっふっふ、このチャンネルのワードクラウドがジェネレートしました🎉、さすが高性能なわたし！😊" + \
                     MessageSegment.image(image)
-                await get_bot().send_guild_channel_msg(
+                await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
                     guild_id=get_active_guild_id(), channel_id=channel, message=msg
                 )
             else:
                 msg = "すいません、チャットレコードが足りないようです"
-                await get_bot().send_guild_channel_msg(
+                await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
                     guild_id=get_active_guild_id(), channel_id=channel, message=msg
                 )
 
         logger.info(f"开始生成全频道词云")
         image = await get_wordcloud_by_time(0, start_time, end_time)
         if image:
-            msg = "おまけに💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、これこそわたしが高性能である証です！✌️" + \
+            # 极少数情况下，水频不会出子频词云，加个判断去掉 おまけに
+            bonus_msg = "おまけに" if len(channels) > 0 else ""
+            msg = f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、これこそわたしが高性能である証です！✌️" + \
                 MessageSegment.image(image)
-            await get_bot().send_guild_channel_msg(
+            await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
                 guild_id=get_active_guild_id(),
                 channel_id=get_config()["wordcloud"]["overall_target_channel"],
                 message=msg,
