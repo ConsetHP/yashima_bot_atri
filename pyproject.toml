@@ -1,14 +1,34 @@
 [project]
-name = "kusa_bot"
+name = "yashima-atri"
 version = "0.1.0"
-description = "kusa_bot"
-readme = "README.md"
-requires-python = ">=3.8, <4.0"
+description = "アトリは高性能ですから！"
+requires-python = ">=3.9"
+dependencies = [
+    "nonebot2[all]",
+    "nonebot-adapter-onebot",
+    "nonebot-plugin-logpile",
+]
 
 [tool.nonebot]
+### NoneBot 配置 ###
+
+# NoneBot 加载的 Adapter 列表
+# 使用 "nb adapter" 命令来管理
 adapters = [
-    {name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11", project_link = "nonebot-adapter-onebot", desc = "OneBot V11 协议"},
+    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" },
+    {name = "Minecraft", module_name = "nonebot.adapters.minecraft"},
 ]
-plugins = ["nonebot_plugin_guild_patch", "nonebot_plugin_apscheduler"]
+
+# NoneBot 加载的插件名列表
+# 使用 "nb plugin" 命令来管理，或者手动增删
+plugins = [
+    "nonebot_plugin_logpile",
+    "nonebot_plugin_apscheduler",
+    "nonebot_plugin_guild_patch"
+]
+
+# NoneBot 加载的插件文件夹列表，会加载这些文件夹下的所有 Python 模块
 plugin_dirs = ["src/plugins"]
-builtin_plugins = ["single_session"]
+
+# 要加载的 NoneBot 内置插件列表
+builtin_plugins = ["echo"]

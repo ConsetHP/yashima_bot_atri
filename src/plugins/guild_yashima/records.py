@@ -121,7 +121,7 @@ async def resend_pc_unreadable_msg_handle(matcher: Matcher, _: GuildMessageEvent
     await matcher.send(to_send)
 
 
-async def resend_system_recalled_img_handle(matcher: Matcher, event: GuildMessageEvent, message: Message = EventMessage()):
+async def resend_system_recalled_img_handle(matcher: Matcher, event: GuildMessageEvent):
     """发送用户在该频道的最后一次发送的图片的url"""
     query = (GuildImgRecord
              .select()
@@ -311,8 +311,7 @@ def analyse_message(msg: str) -> Dict[str, float]:
     """
     # 设置停用词表
     if stopwords_path := get_config()["wordcloud"]["stopwords_path"]:
-        jieba.analyse.set_stop_words(
-            stopwords_path)
+        jieba.analyse.set_stop_words(stopwords_path)
     # 加载用户词典
     # if plugin_config.wordcloud_userdict_path:
     #     jieba.load_userdict(str(plugin_config.wordcloud_userdict_path))
