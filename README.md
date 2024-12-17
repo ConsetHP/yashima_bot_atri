@@ -24,6 +24,7 @@ A QQ-bot that dedicates to a specific qq channel, powered by [kusa_bot](https://
 - send wordcloud images everyday
 - transfer qq's mini-app cards into user-friendly urls
 - recover images that are recalled by tencent's cencorship system
+- connect chat messages between guild channel and minecraft server
 
 ## Quick Guide
 
