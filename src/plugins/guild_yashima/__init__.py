@@ -8,6 +8,7 @@ from .clock import *
 from .db import *
 from .utils import *
 from .records import *
+from .minecraft_msg import *
 
 require("nonebot_plugin_apscheduler")
 
@@ -43,6 +44,11 @@ yesterday_wordcloud = on_command("昨日词云", rule=to_me(), permission=is_adm
 # 恢复审查系统撤回图片相关
 img_record = on_message(handlers=[save_guild_img_url_handle])
 recover_last_img = on_fullmatch("我图呢", rule=to_me(), handlers=[resend_system_recalled_img_handle])
+
+# QQ MC 消息转发相关
+mc_to_qq_msg = on_message(rule=mc_msg_rule, handlers=[mc_msg_handle])
+mc_to_qq_notice = on_notice(rule=mc_msg_rule, handlers=[mc_notice_handle])
+qq_to_mc_msg = on_message(rule=is_minecraft_channel, handlers=[qq_msg_handle])
 
 @reload_config_matcher.handle()
 async def _(event: GuildMessageEvent):

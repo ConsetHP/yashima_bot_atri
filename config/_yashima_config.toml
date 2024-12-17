@@ -24,7 +24,15 @@ disable_channels = [123]  # 不启用的子频道ID列表
 anti_repeat_channels = "" # 暂时弃用
 blacklist_user_ids = ["144115218735425860", "144115218680952989"]  # 词云排除用户
 blacklist_channels = [1]  # 全屏词云排除列表
+blacklist_bot_commands = [" 打卡", " /打卡"]  # 词云排除bot指令
 overall_target_channel = 123  # 全频词云发送子频道ID
+
+[minecraft]
+bot_id = "233233233"  # 机器人 QQ 号
+minecraft_channel_id = "123123123"  # Minecraft、QQ 互通聊天频道ID
+server_name = "Server"  # 服务器名称，应与 .env 文件中ws配置保持同步
+minecraft_message_accent = "说："  # 服务器聊天消息修饰
+blacklist_qq_message_prefix = [".", "/"]  # QQ消息过滤前缀
 
 [debug]
 test_channel = ""  # 测试用的频道ID
