@@ -21,7 +21,6 @@ from nonebot.adapters import Message
 from nonebot.matcher import Matcher
 from nonebot.params import EventMessage, CommandArg
 from nonebot_plugin_apscheduler import scheduler
-from nonebot.adapters.onebot.v11 import ActionFailed
 from wordcloud import WordCloud
 
 from .db import *
@@ -202,8 +201,6 @@ async def yesterday_wordcloud_job():
             await send_msgs(channel, msg)
         else:
             logger.error("全频道词云图片未生成")
-    except ActionFailed as af_ex:
-        logger.error(f"消息风控，词云发送失败：{af_ex}")
     except Exception as ex:
         # 有点哈人，姑且先发送到测试频
         # 通常都是签名服务器错误造成的，notice很大可能也发不出去
