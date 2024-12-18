@@ -4,13 +4,16 @@
 from nonebot.plugin import *
 from nonebot.rule import to_me
 
+require("nonebot_plugin_apscheduler")
+require("nonebot_plugin_saa")
+
 from .clock import *
 from .db import *
 from .utils import *
 from .records import *
 from .minecraft_msg import *
+from .send import *
 
-require("nonebot_plugin_apscheduler")
 
 # 数据库初始化
 init_database(get_config()["db"]["file"])
@@ -30,8 +33,7 @@ clock_out = on_fullmatch("结束自习", rule=(to_me() & is_clock_channel), hand
 clock_correct_time = on_command("自习修正", rule=(to_me() & is_clock_channel), handlers=[clock_correct_time_handle])
 clock_my_statistics = on_fullmatch("我的自习", rule=(to_me() & is_clock_channel), handlers=[clock_my_statistics_handle])
 
-# 目前允许全频道使用破铜烂铁，将代码替换成以下注释部分以将功能限制在自习室
-# clock_rocket_fists = on_fullmatch("破铜烂铁", rule=(to_me() & is_clock_channel), handlers=[clock_rocket_fists_handle])
+# 萝卜子火箭拳相关
 clock_rocket_fists = on_keyword({
     "破铜烂铁", "ガラクタ", "ポンコツ", "がらくた", "ぽんこつ", "萝卜子", "废物", "ロボっこ", "ロボっコ", "ロボっ子"
     }, rule=(to_me()), handlers=[clock_rocket_fists_handle])
