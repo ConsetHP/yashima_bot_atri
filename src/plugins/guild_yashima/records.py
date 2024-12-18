@@ -26,6 +26,7 @@ from wordcloud import WordCloud
 
 from .db import *
 from .utils import *
+from .send import send_msgs
 
 
 async def save_guild_img_url_handle(event: GuildMessageEvent, message: Message = EventMessage()):
@@ -74,7 +75,7 @@ async def clear_overtime_message_record():
         logger.info(f"已删除频道聊天记录{msg_num}条，聊天图片{img_num}条")
 
 
-async def resend_pc_unreadable_msg_handle(matcher: Matcher, _: GuildMessageEvent, message: Message = EventMessage()):
+async def resend_pc_unreadable_msg_handle(_: Matcher, event: GuildMessageEvent, message: Message = EventMessage()):
     """解析PC不可读消息并转换发送"""
     if message.count("json") == 0:
         return
@@ -112,17 +113,17 @@ async def resend_pc_unreadable_msg_handle(matcher: Matcher, _: GuildMessageEvent
     # 处理url防止qq二度解析（在http后添加一个零宽空格）
     # link = link.replace("http", "http\u200b")
     if link.count("www.bilibili.com") != 0:
-        link = link.replace("www.bilibili.com", "(被藤子屏蔽，请手动修改为b站域名)")
+        link = link.replace("www.bilibili.com", "(请手动修改为b站域名)")
     if link.count("https", 0, 7) != 0:
         link = link.replace("https://", "")
     elif link.count("http", 0, 7) != 0:
         link = link.replace("http://", "")
 
     to_send = f"🔗 こちらはURLです：\n{title}\n{link}\nフンス、藤こより、私の方が高性能でしょう！😤"
-    await matcher.send(to_send)
+    await send_msgs(event.channel_id, to_send)
 
 
-async def resend_system_recalled_img_handle(matcher: Matcher, event: GuildMessageEvent):
+async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent):
     """发送用户在该频道的最后一次发送的图片的url"""
     query = (GuildImgRecord
              .select()
@@ -132,17 +133,19 @@ async def resend_system_recalled_img_handle(matcher: Matcher, event: GuildMessag
 
     if query:
         to_send = f"🔗 こちらはURLです：\n{query.content}\nフンだ、なんて高性能でしょうわたしは！😤"
-        await matcher.send(to_send)
+        await send_msgs(event.channel_id, to_send)
     else:
-        await matcher.send("検索中、検索中......🔍。データが見つかりません")
+        to_send = "検索中、検索中......🔍。データが見つかりません"
+        await send_msgs(event.channel_id, to_send)
 
 
-async def yesterday_wordcloud_handle(matcher: Matcher, event: GuildMessageEvent, args: Message = CommandArg()):
+async def yesterday_wordcloud_handle(_: Matcher, event: GuildMessageEvent, args: Message = CommandArg()):
     yesterday = datetime.now() - timedelta(days=1)
     start_time = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
     end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
     channel_id = args.extract_plain_text()
-    await matcher.send("ワードクラウドをジェネレートしますね。検索中、検索中......🔍")
+    progress_msg = "ワードクラウドをジェネレートしますね。検索中、検索中......🔍"
+    await send_msgs(event.channel_id, progress_msg)
 
     resp = "指定されたチャンネル"
     if not channel_id:
@@ -152,14 +155,11 @@ async def yesterday_wordcloud_handle(matcher: Matcher, event: GuildMessageEvent,
         channel_id = int(channel_id)
     image = await get_wordcloud_by_time(channel_id, start_time, end_time)
     if image:
-        await matcher.send(
-            f"ふっふっふ、{resp}のワードクラウドがジェネレートしました🎉、さすが高性能なわたし！😊"
-            + MessageSegment.image(image)
-        )
+        msg = MessageSegment.text(f"ふっふっふ、{resp}のワードクラウドがジェネレートしました🎉、さすが高性能なわたし！😊") + MessageSegment.image(image)
+        await send_msgs(event.channel_id, msg)
     else:
-        await matcher.send(
-            at_user(event) + f"{resp}のチャットレコードが足りないようです"
-        )
+        msg = at_user(event) + MessageSegment.text(f"{resp}のチャットレコードが足りないようです")
+        await send_msgs(event.channel_id, msg)
 
 
 @scheduler.scheduled_job("cron", minute="10", hour="0", id="yesterday_wordcloud_job")
@@ -181,47 +181,34 @@ async def yesterday_wordcloud_job():
             logger.info(f"开始生成词云，频道ID:{channel}")
 
             notice = "えっと、そろそろワードクラウドの時間です。検索中、検索中......🔍"
-            await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
-                guild_id=get_active_guild_id(), channel_id=channel, message=notice
-            )
+            await send_msgs(channel, notice)
 
             image = await get_wordcloud_by_time(channel, start_time, end_time)
             if image:
-                msg = "ふっふっふ、このチャンネルのワードクラウドがジェネレートしました🎉、さすが高性能なわたし！😊" + \
+                msg = MessageSegment.text("ふっふっふ、このチャンネルのワードクラウドがジェネレートしました🎉、さすが高性能なわたし！😊") + \
                     MessageSegment.image(image)
-                await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
-                    guild_id=get_active_guild_id(), channel_id=channel, message=msg
-                )
+                await send_msgs(channel, msg)
             else:
                 msg = "すいません、チャットレコードが足りないようです"
-                await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
-                    guild_id=get_active_guild_id(), channel_id=channel, message=msg
-                )
+                await send_msgs(channel, msg)
 
         logger.info(f"开始生成全频道词云")
         image = await get_wordcloud_by_time(0, start_time, end_time)
         if image:
             # 极少数情况下，水频不会出子频词云，加个判断去掉 おまけに
             bonus_msg = "おまけに" if len(channels) > 0 else ""
-            msg = f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、これこそわたしが高性能である証です！✌️" + \
+            msg = MessageSegment.text(f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、これこそわたしが高性能である証です！✌️") + \
                 MessageSegment.image(image)
-            await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
-                guild_id=get_active_guild_id(),
-                channel_id=get_config()["wordcloud"]["overall_target_channel"],
-                message=msg,
-            )
+            await send_msgs(channel, msg)
         else:
             logger.error("全频道词云图片未生成")
     except ActionFailed as af_ex:
         logger.error(f"消息风控，词云发送失败：{af_ex}")
     except Exception as ex:
         # 有点哈人，姑且先发送到测试频
-        # 得把发送失败后的逻辑改成失败即重试数次
         # 通常都是签名服务器错误造成的，notice很大可能也发不出去
         notice = "メモリーがロストのようです😦、申し訳ございません"
-        await get_bot().send_guild_channel_msg(
-            guild_id=get_active_guild_id(), channel_id=get_config()["debug"]["test_channel"], message=notice
-        )
+        await send_msgs(channel,notice)
         logger.error(f"生成词云异常：{ex}")
 
 
@@ -269,7 +256,7 @@ async def get_wordcloud_by_time(
     return await get_wordcloud_img(jieba_messages)
 
 
-def anti_repeat_process(msg: str):
+def anti_repeat_process(msg: str) -> str:
     """使用jieba分词来去除同一条消息内的大量重复词语"""
     words = jieba.analyse.extract_tags(msg)
     message = " ".join(words)

@@ -6,6 +6,7 @@ import re
 from typing import Union
 from datetime import datetime
 
+from nonebot.adapters import Message
 from nonebot.adapters.minecraft import Message as MinecraftMessage, MessageSegment as MinecraftMessageSegment
 from nonebot.adapters.minecraft import Event as MinecraftEvent, MessageEvent as MinecraftMessageEvent
 from nonebot.adapters.onebot.v11 import ActionFailed
@@ -25,10 +26,12 @@ from nonebot.adapters.minecraft import (
 )
 
 from .utils import *
+from .send import send_msgs
 
 
 CARPET_BOT_PREFIX = "bot_"  # 地毯模组假人前缀
 
+CHANNEL_ID: str = get_config()["minecraft"]["minecraft_channel_id"]  # Minecraft 子频道的ID
 
 async def mc_msg_handle(event: Union[BaseChatEvent, BaseDeathEvent]):
     """将 Minecraft 玩家聊天消息发至频道"""
@@ -63,11 +66,7 @@ async def send_mc_msg_to_qq(server_name: str, result: str):
     msg_result = re.sub(r"[&§].", "", result)
     # 添加服务器名前缀
     msg_result = f"[{server_name}] {msg_result}"
-    await get_bot(get_config()["minecraft"]["bot_id"]).send_guild_channel_msg(
-        guild_id=get_active_guild_id(),
-        channel_id=get_config()["minecraft"]["minecraft_channel_id"],
-        message=msg_result,
-    )
+    await send_msgs(CHANNEL_ID, msg_result)
 
 
 async def qq_msg_handle(bot: Bot, event: GuildMessageEvent):

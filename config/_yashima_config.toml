@@ -1,3 +1,8 @@
+[general]
+bot_id = "114514"  # 机器人 QQ 号
+send_failure_retry = 5  # 消息发送失败重试次数
+send_interval = 1.5  # 消息发送间隔
+
 [auth]
 admin = [""] # 管理员ID
 
@@ -13,7 +18,7 @@ clock_overtime = 200 # 打卡自动签退时长，分钟
 
 [wordcloud]
 stopwords_path = "config/stopwords.txt"
-font_path = "config/SourceHanSans.otf"
+font_path = "config/PingFangSC-Semibold.otf"
 options = {}
 width = 1920
 height = 1920
@@ -28,7 +33,6 @@ blacklist_bot_commands = [" 打卡", " /打卡"]  # 词云排除bot指令
 overall_target_channel = 123  # 全频词云发送子频道ID
 
 [minecraft]
-bot_id = "233233233"  # 机器人 QQ 号
 minecraft_channel_id = "123123123"  # Minecraft、QQ 互通聊天频道ID
 server_name = "Server"  # 服务器名称，应与 .env 文件中ws配置保持同步
 minecraft_message_accent = "说："  # 服务器聊天消息修饰
