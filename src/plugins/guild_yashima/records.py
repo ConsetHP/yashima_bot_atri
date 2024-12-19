@@ -255,8 +255,10 @@ async def get_wordcloud_by_time(
 
 def anti_repeat_process(msg: str) -> str:
     """使用jieba分词来去除同一条消息内的大量重复词语"""
-    words = jieba.analyse.extract_tags(msg)
-    message = " ".join(words)
+    words: list[str] = jieba.analyse.extract_tags(msg)
+    # 去除长度小于3的数字
+    processed_words = ["" if word.isdigit() and len(word) < 3 else word for word in words]
+    message = " ".join(processed_words)
     return message
 
 
