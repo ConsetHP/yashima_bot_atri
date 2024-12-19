@@ -6,7 +6,6 @@ import re
 from typing import Union
 from datetime import datetime
 
-from nonebot.adapters import Message
 from nonebot.adapters.minecraft import Message as MinecraftMessage, MessageSegment as MinecraftMessageSegment
 from nonebot.adapters.minecraft import Event as MinecraftEvent, MessageEvent as MinecraftMessageEvent
 from nonebot.adapters.onebot.v11 import ActionFailed
