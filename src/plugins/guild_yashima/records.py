@@ -12,16 +12,20 @@ from datetime import timedelta
 from functools import partial, reduce
 from io import BytesIO
 from typing import Dict
+from pathlib import Path
 
 import jieba
 import jieba.analyse
 import jsonpath_ng as jsonpath
+import numpy as np
+from PIL import Image
 from emoji import replace_emoji
 from nonebot.adapters import Message
 from nonebot.matcher import Matcher
 from nonebot.params import EventMessage, CommandArg
 from nonebot_plugin_apscheduler import scheduler
 from wordcloud import WordCloud
+from wordcloud import ImageColorGenerator
 
 from .db import *
 from .utils import *
@@ -317,22 +321,39 @@ def _get_wordcloud_img(messages: List[str]) -> Optional[BytesIO]:
     # 词云参数
     wordcloud_options = {}
     wordcloud_options.update(get_config()["wordcloud"]["options"])
-    wordcloud_options.setdefault(
-        "font_path", str(get_config()["wordcloud"]["font_path"])
-    )
     wordcloud_options.setdefault("width", get_config()["wordcloud"]["width"])
     wordcloud_options.setdefault("height", get_config()["wordcloud"]["height"])
-    wordcloud_options.setdefault(
-        "background_color", get_config()["wordcloud"]["background_color"]
+    # 加载主题
+    if theme := get_config()["wordcloud"]["theme"]:
+        wordcloud_options.setdefault("background_color", None)
+        wordcloud_options.setdefault("mode", "RGBA")
+        wordcloud_options.setdefault("mask", np.array(Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["mask_path"] / f"{theme}.png"))))
+        wordcloud_options.setdefault("font_path", str(Path(__file__).parent / get_config()["wordcloud"]["theme_font_path"] / f"{theme}.otf"))
+        wordcloud_options.setdefault("color_func", ImageColorGenerator(np.array(Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["mask_path"] / f"{theme}-color.png")))))
+    else:
+        wordcloud_options.setdefault(
+        "font_path", str(get_config()["wordcloud"]["font_path"])
     )
-    wordcloud_options.setdefault("colormap", get_config()[
-                                 "wordcloud"]["colormap"])
+        wordcloud_options.setdefault(
+            "background_color", get_config()["wordcloud"]["background_color"]
+        )
+        wordcloud_options.setdefault("colormap", get_config()[
+                                    "wordcloud"]["colormap"])
     try:
         wordcloud = WordCloud(**wordcloud_options)
         image = wordcloud.generate_from_frequencies(frequency).to_image()
         image_bytes = BytesIO()
         image.save(image_bytes, format="PNG")
-        return image_bytes
+        # 将图片覆盖到主题背景上
+        if theme := get_config()["wordcloud"]["theme"]:
+            background = Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["background_img_path"] / f"{theme}.png"))
+            overlay = Image.open(image_bytes)
+            background.paste(overlay, (0, 0), overlay)
+            result_bytes = BytesIO()
+            background.save(result_bytes, format="PNG")
+            return result_bytes
+        else:
+            return image_bytes
     except ValueError:
         pass
 
