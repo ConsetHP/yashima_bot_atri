@@ -12,17 +12,20 @@ from datetime import timedelta
 from functools import partial, reduce
 from io import BytesIO
 from typing import Dict
+from pathlib import Path
 
 import jieba
 import jieba.analyse
 import jsonpath_ng as jsonpath
+import numpy as np
+from PIL import Image
 from emoji import replace_emoji
 from nonebot.adapters import Message
 from nonebot.matcher import Matcher
 from nonebot.params import EventMessage, CommandArg
 from nonebot_plugin_apscheduler import scheduler
-from nonebot.adapters.onebot.v11 import ActionFailed
 from wordcloud import WordCloud
+from wordcloud import ImageColorGenerator
 
 from .db import *
 from .utils import *
@@ -202,8 +205,6 @@ async def yesterday_wordcloud_job():
             await send_msgs(channel, msg)
         else:
             logger.error("全频道词云图片未生成")
-    except ActionFailed as af_ex:
-        logger.error(f"消息风控，词云发送失败：{af_ex}")
     except Exception as ex:
         # 有点哈人，姑且先发送到测试频
         # 通常都是签名服务器错误造成的，notice很大可能也发不出去
@@ -258,8 +259,10 @@ async def get_wordcloud_by_time(
 
 def anti_repeat_process(msg: str) -> str:
     """使用jieba分词来去除同一条消息内的大量重复词语"""
-    words = jieba.analyse.extract_tags(msg)
-    message = " ".join(words)
+    words: list[str] = jieba.analyse.extract_tags(msg)
+    # 去除长度小于3的数字
+    processed_words = ["" if word.isdigit() and len(word) < 3 else word for word in words]
+    message = " ".join(processed_words)
     return message
 
 
@@ -318,22 +321,39 @@ def _get_wordcloud_img(messages: List[str]) -> Optional[BytesIO]:
     # 词云参数
     wordcloud_options = {}
     wordcloud_options.update(get_config()["wordcloud"]["options"])
-    wordcloud_options.setdefault(
-        "font_path", str(get_config()["wordcloud"]["font_path"])
-    )
     wordcloud_options.setdefault("width", get_config()["wordcloud"]["width"])
     wordcloud_options.setdefault("height", get_config()["wordcloud"]["height"])
-    wordcloud_options.setdefault(
-        "background_color", get_config()["wordcloud"]["background_color"]
+    # 加载主题
+    if theme := get_config()["wordcloud"]["theme"]:
+        wordcloud_options.setdefault("background_color", None)
+        wordcloud_options.setdefault("mode", "RGBA")
+        wordcloud_options.setdefault("mask", np.array(Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["mask_path"] / f"{theme}.png"))))
+        wordcloud_options.setdefault("font_path", str(Path(__file__).parent / get_config()["wordcloud"]["theme_font_path"] / f"{theme}.otf"))
+        wordcloud_options.setdefault("color_func", ImageColorGenerator(np.array(Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["mask_path"] / f"{theme}-color.png")))))
+    else:
+        wordcloud_options.setdefault(
+        "font_path", str(get_config()["wordcloud"]["font_path"])
     )
-    wordcloud_options.setdefault("colormap", get_config()[
-                                 "wordcloud"]["colormap"])
+        wordcloud_options.setdefault(
+            "background_color", get_config()["wordcloud"]["background_color"]
+        )
+        wordcloud_options.setdefault("colormap", get_config()[
+                                    "wordcloud"]["colormap"])
     try:
         wordcloud = WordCloud(**wordcloud_options)
         image = wordcloud.generate_from_frequencies(frequency).to_image()
         image_bytes = BytesIO()
         image.save(image_bytes, format="PNG")
-        return image_bytes
+        # 将图片覆盖到主题背景上
+        if theme := get_config()["wordcloud"]["theme"]:
+            background = Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["background_img_path"] / f"{theme}.png"))
+            overlay = Image.open(image_bytes)
+            background.paste(overlay, (0, 0), overlay)
+            result_bytes = BytesIO()
+            background.save(result_bytes, format="PNG")
+            return result_bytes
+        else:
+            return image_bytes
     except ValueError:
         pass
 
