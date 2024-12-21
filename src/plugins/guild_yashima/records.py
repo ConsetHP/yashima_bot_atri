@@ -175,25 +175,29 @@ async def yesterday_wordcloud_job():
             hour=23, minute=59, second=59, microsecond=0)
         channels = query_wordcloud_generatable_channel_ids(
             start_time, end_time)
-        logger.info(f"以下频道将生成词云：{channels}")
-        for channel in channels:
-            # 检查该子频道是否已禁用词云生成
-            if channel in get_config()["wordcloud"]["disabled_channels"]:
-                continue
+        if len(channels) > 0:
+            logger.info(f"以下频道将生成词云：{channels}")
+            for channel in channels:
+                # 检查该子频道是否已禁用词云生成
+                if channel in get_config()["wordcloud"]["disabled_channels"]:
+                    continue
 
-            logger.info(f"开始生成词云，频道ID:{channel}")
+                logger.info(f"开始生成词云，频道ID:{channel}")
 
+                notice = "えっと、そろそろワードクラウドの時間です。検索中、検索中......🔍"
+                await send_msgs(channel, notice)
+
+                image = await get_wordcloud_by_time(channel, start_time, end_time)
+                if image:
+                    msg = MessageSegment.text("ふっふっふ、このチャンネルのワードクラウドがジェネレートしました🎉、さすが高性能なわたし！😊") + \
+                        MessageSegment.image(image)
+                    await send_msgs(channel, msg)
+                else:
+                    logger.error("全频道词云图片未生成")
+                    raise Exception("词云图片未生成")
+        else:
             notice = "えっと、そろそろワードクラウドの時間です。検索中、検索中......🔍"
-            await send_msgs(channel, notice)
-
-            image = await get_wordcloud_by_time(channel, start_time, end_time)
-            if image:
-                msg = MessageSegment.text("ふっふっふ、このチャンネルのワードクラウドがジェネレートしました🎉、さすが高性能なわたし！😊") + \
-                    MessageSegment.image(image)
-                await send_msgs(channel, msg)
-            else:
-                msg = "すいません、チャットレコードが足りないようです"
-                await send_msgs(channel, msg)
+            await send_msgs(get_config()["wordcloud"]["overall_target_channel"], notice)
 
         logger.info(f"开始生成全频道词云")
         image = await get_wordcloud_by_time(0, start_time, end_time)
@@ -202,14 +206,15 @@ async def yesterday_wordcloud_job():
             bonus_msg = "おまけに" if len(channels) > 0 else ""
             msg = MessageSegment.text(f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、これこそわたしが高性能である証です！✌️") + \
                 MessageSegment.image(image)
-            await send_msgs(channel, msg)
+            await send_msgs(get_config()["wordcloud"]["overall_target_channel"], msg)
         else:
             logger.error("全频道词云图片未生成")
+            raise Exception("词云图片未生成")
     except Exception as ex:
         # 有点哈人，姑且先发送到测试频
         # 通常都是签名服务器错误造成的，notice很大可能也发不出去
         notice = "メモリーがロストのようです😦、申し訳ございません"
-        await send_msgs(channel,notice)
+        await send_msgs(get_config()["debug"]["test_channel"], notice)
         logger.error(f"生成词云异常：{ex}")
 
 
