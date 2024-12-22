@@ -30,9 +30,6 @@ async def clock_help_handle(_: Matcher, event: GuildMessageEvent):
 @bot 破铜烂铁   （抖M福利）"""
     await send_msgs(event.channel_id, msg)
 
-async def clock_rocket_fists_handle(_: Matcher, event: GuildMessageEvent):
-    msg = at_user(event) + "⚠️ロボット差別禁止法に抵触します、お仕置きのロケットパンチです！🚀👊"
-    await send_msgs(event.channel_id, msg)
 
 async def clock_my_statistics_handle(_: Matcher, event: GuildMessageEvent):
     user_id = event.get_user_id()
