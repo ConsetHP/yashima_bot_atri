@@ -47,5 +47,5 @@ class Atri:
 
     @staticmethod    
     async def ping_handle(_: Matcher, event: GuildMessageEvent):
-        msg = at_user(event) + "⚠️ロボット差別禁止法に抵触します、お仕置きのロケットパンチです！🚀👊"
+        msg = at_user(event) + f"{Atri.general_word("robot_law")}、{Atri.general_word("rocket_punch")}"
         await send_msgs(event.channel_id, msg)
