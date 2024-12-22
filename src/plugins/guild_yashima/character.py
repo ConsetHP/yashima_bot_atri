@@ -1,0 +1,41 @@
+import random
+
+from nonebot.log import logger
+
+class Atri:
+    @staticmethod
+    def general_word(key: str) -> str:
+        "アトリ 的通用词"
+        words = {}
+        # 嗯...
+        words["discourse_particle"] = ["えっと", "うんと", "うー", "うーむ", "むむー", "うーんと"]
+        # 哼！
+        words["modal_particle"] = ["フンだ", "フンスフンス", "ふっふっふ", "はあ～", "ムフン", "ふふ", "むふふ", "ふっふっふっふ", "エッヘン", "えへへ"]
+        # 不愧是我！
+        words["proud"] = ["なんて高性能でしょうわたしは！😤",
+                          "さすが高性能なわたし！😊",
+                          "これこそわたしが高性能である証です！✌️",
+                          "わたしの高性能なAIが分析完了しました！",
+                          "わたしこう見えて高性能なんで😤"]
+        words["fuck_tencent"] = ["藤こなんかより、私の方が高性能でしょう！😤", "私の方が低機能な藤こちゃんよりずっと高性能です😤", "しょせんは藤子、わたしよりずっと低機能です"]
+        # 机器人法
+        words["robot_law"] = ["⚠️ロボット差別禁止法に抵触します",
+                              "それロボットへの蔑称ですから",
+                              "ロボットにポンコツと言うのは差別発言です",
+                              "ロボット愛護法第２条第５項、ロボット差別を繰り返す者には鉄拳制裁してもよい"]
+        # 火箭拳
+        words["rocket_punch"] = ["お仕置きのロケットパンチです🚀👊", "ロケットパーーーーーーーーーーーーーーンチ"]
+        words["error"] = ["エラーです", "不具合があります"]
+        words["loading"] = "検索中、検索中......🔍"
+
+        if key in words:
+            if type(words[key]) == list:
+                return random.choice(words[key])
+            elif type(words[key]) == str:
+                return words[key]
+            else:
+                logger.warning("值:不存在，将返回空字符串")
+                return ""
+        else:
+            logger.warning("键不存在，将返回空字符串")
+            return ""
