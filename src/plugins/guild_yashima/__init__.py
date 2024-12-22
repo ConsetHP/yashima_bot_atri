@@ -13,6 +13,7 @@ from .utils import *
 from .records import *
 from .minecraft_msg import *
 from .send import *
+from .character import *
 
 
 # 数据库初始化
