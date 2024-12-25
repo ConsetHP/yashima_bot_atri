@@ -50,7 +50,6 @@ async def save_guild_img_url_handle(event: GuildMessageEvent, message: Message =
         logger.warning(f"出现错误：{e}")
 
 
-
 async def save_recv_guild_msg_handle(event: GuildMessageEvent):
     """保存所有频道文本消息"""
     msg = event.get_plaintext()
