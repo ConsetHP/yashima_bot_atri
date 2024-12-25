@@ -107,7 +107,8 @@ async def resend_pc_unreadable_msg_handle(_: Matcher, event: GuildMessageEvent, 
         link = get_json(f"$.meta.{view}.jumpUrl")
         title = get_json(f"$.meta.{view}.title")
 
-    if not link or len(link) > 300 or not link.startswith("http"):
+    if not link or len(link) > 600 or not link.startswith("http"):
+        logger.warning(f"链接异常：{link}")
         return
     if len(title) > 50:
         title = title[:50] + "…"
