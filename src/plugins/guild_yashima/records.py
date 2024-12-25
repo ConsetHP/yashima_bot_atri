@@ -38,16 +38,17 @@ async def save_guild_img_url_handle(event: GuildMessageEvent, message: Message =
     if message.count("image") == 0:
         return
 
-    segment = message["image", 0]
-    match = re.search(r"url=([^]]+)", str(segment))
-    if match:
-        url = match.group(1)
-        model = GuildImgRecord(
-            channel_id=event.channel_id, user_id=event.get_user_id(), content=url
-        )
-        model.save()
-    else:
-        logger.warning("无法找到url")
+    try:
+        for msg in event.get_message():
+            if msg.type in ["image", "attachment"]:
+                url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
+                model = GuildImgRecord(
+                channel_id=event.channel_id, user_id=event.get_user_id(), content=url
+                )
+                model.save()
+    except Exception as e:
+        logger.warning(f"出现错误：{e}")
+
 
 
 async def save_recv_guild_msg_handle(event: GuildMessageEvent):
