@@ -101,7 +101,7 @@ async def clock_correct_time_handle(_: Matcher, event: GuildMessageEvent, args: 
     model = ClockEventLog.query_overtime(event.get_user_id())
     no_record_err = at_user(event) + f"没有需要修正的记录"
     time_format_err = at_user(event) + f"エラーです、时间格式不正确。正确的格式应为'3小时30分'、'2小时'、'45分'"
-    success_msg = "学習しました、已修正上次自习时长为{model.duration_desc()}"
+    success_msg = f"学習しました、已修正上次自习时长为{model.duration_desc()}"
     if not model:
         await send_msgs(event.channel_id, no_record_err)
         return
@@ -139,8 +139,7 @@ async def find_overtime_and_process():
         model.update_duration()
         model.save()
         msg = MessageSegment.at(model.user_id) + "自习已超时自动签退，记得修正数据ヾ(￣▽￣)。"
-        await get_bot().send_guild_channel_msg(guild_id=get_active_guild_id(), channel_id=clock_channel_id(),
-                                               message=msg)
+        await send_msgs(clock_channel_id(), msg)
     logger.debug("find_overtime_and_process end")
 
 
