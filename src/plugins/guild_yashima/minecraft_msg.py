@@ -135,17 +135,18 @@ async def __get_common_qq_msg_parsing(bot: Bot, event: GuildMessageEvent):
             temp_text = "[图片]"
             temp_color = TextColor.LIGHT_PURPLE
             img_url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
-            hover_event, click_event = __get_action_event_component(img_url, temp_text)
+            # 这俩 event 有 bug ,在 MinecraftMessageSegment 里加入这俩玩意会导致鹊桥接口超时
+            # hover_event, click_event = __get_action_event_component(img_url, temp_text)
         elif msg.type == "video":
             temp_text = "[视频]"
             temp_color = TextColor.LIGHT_PURPLE
             img_url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
-            hover_event, click_event = __get_action_event_component(img_url, temp_text)
+            # hover_event, click_event = __get_action_event_component(img_url, temp_text)
         elif msg.type == "share":
             temp_text = "[分享]"
             temp_color = TextColor.GOLD
             img_url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
-            hover_event, click_event = __get_action_event_component(img_url, temp_text)
+            # hover_event, click_event = __get_action_event_component(img_url, temp_text)
 
         # @用户
         elif msg.type == "at":
@@ -262,6 +263,6 @@ def is_minecraft_channel(event: GuildMessageEvent) -> bool:
 
 def mc_msg_rule(event: MinecraftEvent):
     if isinstance(event, MinecraftMessageEvent):
-        if blacklist_prefix := get_config()["minecraft"]["blacklist_qq_message_prefix"]:
+        if blacklist_prefix := get_config()["minecraft"]["blacklist_mc_message"]:
             return not any(word in str(event.get_message()) for word in blacklist_prefix)
     return event.server_name == get_config()["minecraft"]["server_name"]

@@ -37,7 +37,7 @@ clock_my_statistics = on_fullmatch("我的自习", rule=(to_me() & is_clock_chan
 # 萝卜子火箭拳相关
 clock_rocket_fists = on_keyword({
     "破铜烂铁", "ガラクタ", "ポンコツ", "がらくた", "ぽんこつ", "萝卜子", "废物", "ロボっこ", "ロボっコ", "ロボっ子"
-    }, rule=(to_me()), handlers=[clock_rocket_fists_handle])
+    }, rule=(to_me()), handlers=[Atri.ping_handle])
 
 # 词云相关
 msg_record = on_message(handlers=[save_recv_guild_msg_handle])

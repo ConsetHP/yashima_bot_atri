@@ -1,6 +1,11 @@
 import random
 
 from nonebot.log import logger
+from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.matcher import Matcher
+
+from .utils import at_user
+from .send import send_msgs
 
 class Atri:
     @staticmethod
@@ -21,7 +26,7 @@ class Atri:
         # 机器人法
         words["robot_law"] = ["⚠️ロボット差別禁止法に抵触します",
                               "それロボットへの蔑称ですから",
-                              "ロボットにポンコツと言うのは差別発言です",
+                              "ロボットにそれと言うのは差別発言です",
                               "ロボット愛護法第２条第５項、ロボット差別を繰り返す者には鉄拳制裁してもよい"]
         # 火箭拳
         words["rocket_punch"] = ["お仕置きのロケットパンチです🚀👊", "ロケットパーーーーーーーーーーーーーーンチ"]
@@ -39,3 +44,8 @@ class Atri:
         else:
             logger.warning("键不存在，将返回空字符串")
             return ""
+
+    @staticmethod    
+    async def ping_handle(_: Matcher, event: GuildMessageEvent):
+        msg = at_user(event) + f"{Atri.general_word("robot_law")}、{Atri.general_word("rocket_punch")}"
+        await send_msgs(event.channel_id, msg)
