@@ -36,7 +36,7 @@ overall_target_channel = 123  # 全频词云发送子频道ID
 minecraft_channel_id = "123123123"  # Minecraft、QQ 互通聊天频道ID
 server_name = "Server"  # 服务器名称，应与 .env 文件中ws配置保持同步
 minecraft_message_accent = "说："  # 服务器聊天消息修饰
-blacklist_qq_message_prefix = [".", "/"]  # QQ消息过滤前缀
+blacklist_mc_message = []  # MC消息词语黑名单
 
 [debug]
 test_channel = ""  # 测试用的频道ID
