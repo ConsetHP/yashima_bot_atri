@@ -17,8 +17,9 @@ clock_role_name = "自习中" # 打卡用户组名
 clock_overtime = 200 # 打卡自动签退时长，分钟
 
 [wordcloud]
+theme = "ave_mujica"  # 词云主题，留空不使用主题
 stopwords_path = "config/stopwords.txt"
-font_path = "config/PingFangSC-Semibold.otf"
+font_path = "config/PingFangSC-Semibold.otf"  # 默认字体
 options = {}
 width = 1920
 height = 1920
@@ -37,6 +38,11 @@ minecraft_channel_id = "123123123"  # Minecraft、QQ 互通聊天频道ID
 server_name = "Server"  # 服务器名称，应与 .env 文件中ws配置保持同步
 minecraft_message_accent = "说："  # 服务器聊天消息修饰
 blacklist_mc_message = []  # MC消息词语黑名单
+
+[subscribe]
+text_to_image = false  # 发送消息时将文本转换成图片（没啥用，因为频道里的图片也会被吞）
+browser_render_theme = true  # 是否使用环境中的浏览器渲染主题
+platform_theme = {"weibo" = "ht2i"}  # 为特定平台指定渲染主题（尽量不用basic主题，文字内容太长会被风控）
 
 [debug]
 test_channel = ""  # 测试用的频道ID

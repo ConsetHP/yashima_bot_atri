@@ -2,12 +2,20 @@
 QQ 频道消息和 Minecraft 服务器消息互通
 参考 https://github.com/17TheWord/nonebot-plugin-mcqq
 """
+
 import re
 from typing import Union
 from datetime import datetime
+from typing import Tuple, List, Optional
 
-from nonebot.adapters.minecraft import Message as MinecraftMessage, MessageSegment as MinecraftMessageSegment
-from nonebot.adapters.minecraft import Event as MinecraftEvent, MessageEvent as MinecraftMessageEvent
+from nonebot.adapters.minecraft import (
+    Message as MinecraftMessage,
+    MessageSegment as MinecraftMessageSegment,
+)
+from nonebot.adapters.minecraft import (
+    Event as MinecraftEvent,
+    MessageEvent as MinecraftMessageEvent,
+)
 from nonebot.adapters.onebot.v11 import ActionFailed
 from nonebot.adapters.minecraft.model import (
     TextColor,
@@ -23,14 +31,20 @@ from nonebot.adapters.minecraft import (
     BaseQuitEvent,
     BaseDeathEvent,
 )
+from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.log import logger
+from nonebot import Bot
 
-from .utils import *
+from .utils.utils import get_config, get_bot
 from .send import send_msgs
 
 
 CARPET_BOT_PREFIX = "bot_"  # 地毯模组假人前缀
 
-CHANNEL_ID: str = get_config()["minecraft"]["minecraft_channel_id"]  # Minecraft 子频道的ID
+CHANNEL_ID: str = get_config()["minecraft"][
+    "minecraft_channel_id"
+]  # Minecraft 子频道的ID
+
 
 async def mc_msg_handle(event: Union[BaseChatEvent, BaseDeathEvent]):
     """将 Minecraft 玩家聊天消息发至频道"""
@@ -40,7 +54,7 @@ async def mc_msg_handle(event: Union[BaseChatEvent, BaseDeathEvent]):
     # 屏蔽假人死亡消息
     if msg_text.startswith(CARPET_BOT_PREFIX) and isinstance(event, BaseDeathEvent):
         return
-    
+
     msg_result = (
         msg_text
         if isinstance(event, BaseDeathEvent)
@@ -54,7 +68,7 @@ async def mc_notice_handle(event: Union[BaseJoinEvent, BaseQuitEvent]):
     # 玩家名带假人前缀不发送至频道
     if event.player.nickname.startswith(CARPET_BOT_PREFIX):
         return
-    
+
     msg_result = f"{event.player.nickname} {'加入' if isinstance(event, BaseJoinEvent) else '退出'}了游戏"
     await send_mc_msg_to_qq(event.server_name, msg_result)
 
@@ -72,12 +86,16 @@ async def qq_msg_handle(bot: Bot, event: GuildMessageEvent):
     """将 QQ 频道聊天消息发至 Minecraft"""
     if server_name := get_config()["minecraft"]["server_name"]:
         message, log_text = await parse_qq_msg_to_base_model(bot=bot, event=event)
-        result_log_text = f"返回结果：\n发送至服务器 {server_name} 的命令结果：\n{log_text}"
+        result_log_text = (
+            f"返回结果：\n发送至服务器 {server_name} 的命令结果：\n{log_text}"
+        )
         logger.info(result_log_text)
         await send_qq_msg_to_mc(server_name, message)
 
 
-async def parse_qq_msg_to_base_model(bot: Bot, event: GuildMessageEvent) -> Tuple[MinecraftMessage, str]:
+async def parse_qq_msg_to_base_model(
+    bot: Bot, event: GuildMessageEvent
+) -> Tuple[MinecraftMessage, str]:
     """
     解析 QQ 消息，转为 WebSocketBody 模型
     :param bot: 聊天平台Bot实例
@@ -89,8 +107,14 @@ async def parse_qq_msg_to_base_model(bot: Bot, event: GuildMessageEvent) -> Tupl
     log_text = ""
 
     # 消息发送者昵称
-    sender_nickname_text = (await __get_group_or_nick_name(bot, event, str(event.get_user_id())))
-    message_list.append(MinecraftMessageSegment.text(text=f" {sender_nickname_text} ", color=TextColor.GREEN))
+    sender_nickname_text = await __get_group_or_nick_name(
+        bot, event, str(event.get_user_id())
+    )
+    message_list.append(
+        MinecraftMessageSegment.text(
+            text=f" {sender_nickname_text} ", color=TextColor.GREEN
+        )
+    )
     log_text += sender_nickname_text
 
     # 添加聊天消息修饰（xxx 说：）
@@ -134,18 +158,30 @@ async def __get_common_qq_msg_parsing(bot: Bot, event: GuildMessageEvent):
         elif msg.type in ["image", "attachment"]:
             temp_text = "[图片]"
             temp_color = TextColor.LIGHT_PURPLE
-            img_url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
+            img_url = (
+                msg.data["url"]
+                if msg.data["url"].startswith("http")
+                else f"https://{msg.data['url']}"
+            )
             # 这俩 event 有 bug ,在 MinecraftMessageSegment 里加入这俩玩意会导致鹊桥接口超时
             # hover_event, click_event = __get_action_event_component(img_url, temp_text)
         elif msg.type == "video":
             temp_text = "[视频]"
             temp_color = TextColor.LIGHT_PURPLE
-            img_url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
+            img_url = (
+                msg.data["url"]
+                if msg.data["url"].startswith("http")
+                else f"https://{msg.data['url']}"
+            )
             # hover_event, click_event = __get_action_event_component(img_url, temp_text)
         elif msg.type == "share":
             temp_text = "[分享]"
             temp_color = TextColor.GOLD
-            img_url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
+            img_url = (  # noqa: F841
+                msg.data["url"]
+                if msg.data["url"].startswith("http")
+                else f"https://{msg.data['url']}"
+            )
             # hover_event, click_event = __get_action_event_component(img_url, temp_text)
 
         # @用户
@@ -153,7 +189,9 @@ async def __get_common_qq_msg_parsing(bot: Bot, event: GuildMessageEvent):
             if msg.data["qq"] == "all":
                 temp_text = "@全体成员"
             else:
-                temp_text = f"@{await __get_group_or_nick_name(bot, event, msg.data['qq'])}"
+                temp_text = (
+                    f"@{await __get_group_or_nick_name(bot, event, msg.data['qq'])}"
+                )
             temp_color = TextColor.GREEN
 
         # @子频道
@@ -184,7 +222,7 @@ async def __get_common_qq_msg_parsing(bot: Bot, event: GuildMessageEvent):
             text=temp_text,
             color=temp_color,
             hover_event=hover_event,
-            click_event=click_event
+            click_event=click_event,
         )
         message_list.append(temp_component)
 
@@ -201,17 +239,15 @@ def __get_action_event_component(img_url: str, temp_text: str):
     temp_text = temp_text.replace("[", "[查看")
     hover_event = HoverEvent(
         action=HoverAction.SHOW_TEXT,
-        text=[BaseComponent(text=temp_text, color=TextColor.DARK_PURPLE)]
+        text=[BaseComponent(text=temp_text, color=TextColor.DARK_PURPLE)],
     )
-    click_event = ClickEvent(
-        action=ClickAction.OPEN_URL,
-        value=img_url
-    )
+    click_event = ClickEvent(action=ClickAction.OPEN_URL, value=img_url)
     return hover_event, click_event
 
 
-
-async def __get_group_or_nick_name(bot: Bot,event: GuildMessageEvent,user_id: Optional[str] = None) -> str:
+async def __get_group_or_nick_name(
+    bot: Bot, event: GuildMessageEvent, user_id: Optional[str] = None
+) -> str:
     """
     获取频道名或者频道用户昵称
     :param bot: 平台Bot实例
@@ -227,12 +263,14 @@ async def __get_group_or_nick_name(bot: Bot,event: GuildMessageEvent,user_id: Op
                     temp_text = event.sender.nickname
                 else:
                     temp_text = (
-                        await bot.get_guild_member_profile(guild_id=event.guild_id, user_id=user_id)
+                        await bot.get_guild_member_profile(
+                            guild_id=event.guild_id, user_id=user_id
+                        )
                     )["nickname"]
             else:
                 temp_text = ""
                 for per_channel in await bot.get_guild_channel_list(
-                        guild_id=event.guild_id, no_cache=True
+                    guild_id=event.guild_id, no_cache=True
                 ):
                     if str(event.channel_id) == per_channel["channel_id"]:
                         channel_name = per_channel["channel_name"]
@@ -259,10 +297,12 @@ def minecraft_channel_id() -> str:
 
 def is_minecraft_channel(event: GuildMessageEvent) -> bool:
     return minecraft_channel_id() == str(event.channel_id)
-    
+
 
 def mc_msg_rule(event: MinecraftEvent):
     if isinstance(event, MinecraftMessageEvent):
         if blacklist_prefix := get_config()["minecraft"]["blacklist_mc_message"]:
-            return not any(word in str(event.get_message()) for word in blacklist_prefix)
+            return not any(
+                word in str(event.get_message()) for word in blacklist_prefix
+            )
     return event.server_name == get_config()["minecraft"]["server_name"]

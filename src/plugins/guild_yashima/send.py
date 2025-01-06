@@ -2,6 +2,7 @@
 消息发送队列
 参考 https://github.com/MountainDash/nonebot-bison
 """
+
 import asyncio
 from collections import deque
 
@@ -11,7 +12,7 @@ from nonebot.adapters import Message
 from nonebot.log import logger
 from nonebot_plugin_saa.auto_select_bot import refresh_bots
 
-from .utils import get_config, get_active_guild_id
+from .utils.utils import get_config, get_active_guild_id
 
 QUEUE: deque[tuple[str, Message | str, int]] = deque()
 
@@ -27,8 +28,8 @@ QQ_BOT_ID = get_config()["general"]["bot_id"]
 async def _do_send(channel_id: str, msg: Message | str):
     try:
         await get_bot(QQ_BOT_ID).send_guild_channel_msg(
-            guild_id=GUILD_ID,channel_id=channel_id, message=msg
-            )
+            guild_id=GUILD_ID, channel_id=channel_id, message=msg
+        )
     except ActionFailed:
         await refresh_bots()
         logger.warning("发送消息失败，刷新机器人中")

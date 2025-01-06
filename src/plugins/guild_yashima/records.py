@@ -1,8 +1,8 @@
 """
 消息存储、词云等
 有参考 https://github.com/he0119/nonebot-plugin-wordcloud
-TO DO: 将 アトリ 的高性能消息抽象成一个类，方便增加和修改
 """
+
 import asyncio
 import concurrent.futures
 import datetime
@@ -11,7 +11,7 @@ import re
 from datetime import timedelta
 from functools import partial, reduce
 from io import BytesIO
-from typing import Dict
+from typing import Dict, List, Optional
 from pathlib import Path
 
 import jieba
@@ -20,20 +20,26 @@ import jsonpath_ng as jsonpath
 import numpy as np
 from PIL import Image
 from emoji import replace_emoji
+from peewee import fn
 from nonebot.adapters import Message
+from nonebot.adapters.onebot.v11 import MessageSegment
+from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.params import EventMessage, CommandArg
 from nonebot_plugin_apscheduler import scheduler
 from wordcloud import WordCloud
 from wordcloud import ImageColorGenerator
 
-from .db import *
-from .utils import *
+from .db import GuildImgRecord, GuildMessageRecord
+from .utils.utils import get_config, process_url, at_user
 from .send import send_msgs
-from .character import *
+from .character import Atri
 
 
-async def save_guild_img_url_handle(event: GuildMessageEvent, message: Message = EventMessage()):
+async def save_guild_img_url_handle(
+    event: GuildMessageEvent, message: Message = EventMessage()
+):
     """保存所有频道的图片url"""
     if message.count("image") == 0:
         return
@@ -41,9 +47,15 @@ async def save_guild_img_url_handle(event: GuildMessageEvent, message: Message =
     try:
         for msg in event.get_message():
             if msg.type in ["image", "attachment"]:
-                url = msg.data["url"] if msg.data["url"].startswith("http") else f"https://{msg.data['url']}"
+                url = (
+                    msg.data["url"]
+                    if msg.data["url"].startswith("http")
+                    else f"https://{msg.data['url']}"
+                )
                 model = GuildImgRecord(
-                channel_id=event.channel_id, user_id=event.get_user_id(), content=url
+                    channel_id=event.channel_id,
+                    user_id=event.get_user_id(),
+                    content=url,
                 )
                 model.save()
     except Exception as e:
@@ -66,12 +78,10 @@ async def save_recv_guild_msg_handle(event: GuildMessageEvent):
 async def clear_overtime_message_record():
     msg_save_days = int(get_config()["db"]["msg_save_days"])
     msg_query = GuildMessageRecord.delete().where(
-        GuildMessageRecord.recv_time < (
-            datetime.now() - timedelta(days=msg_save_days))
+        GuildMessageRecord.recv_time < (datetime.now() - timedelta(days=msg_save_days))
     )
     img_query = GuildImgRecord.delete().where(
-        GuildImgRecord.recv_time < (
-            datetime.now() - timedelta(days=msg_save_days))
+        GuildImgRecord.recv_time < (datetime.now() - timedelta(days=msg_save_days))
     )
     msg_num = msg_query.execute()
     img_num = img_query.execute()
@@ -79,7 +89,9 @@ async def clear_overtime_message_record():
         logger.info(f"已删除频道聊天记录{msg_num}条，聊天图片{img_num}条")
 
 
-async def resend_pc_unreadable_msg_handle(_: Matcher, event: GuildMessageEvent, message: Message = EventMessage()):
+async def resend_pc_unreadable_msg_handle(
+    _: Matcher, event: GuildMessageEvent, message: Message = EventMessage()
+):
     """解析PC不可读消息并转换发送"""
     if message.count("json") == 0:
         return
@@ -116,13 +128,7 @@ async def resend_pc_unreadable_msg_handle(_: Matcher, event: GuildMessageEvent, 
         title = f"{Atri.general_word("error")}：タイトルを解析することができません"
 
     # 处理url防止qq二度解析（在http后添加一个零宽空格）
-    # link = link.replace("http", "http\u200b")
-    if link.count("www.bilibili.com") != 0:
-        link = link.replace("www.bilibili.com", "(请手动修改为b站域名)")
-    if link.count("https", 0, 7) != 0:
-        link = link.replace("https://", "")
-    elif link.count("http", 0, 7) != 0:
-        link = link.replace("http://", "")
+    link = process_url(link)
 
     to_send = f"🔗 こちらはURLです：\n{title}\n{link}\n{Atri.general_word("modal_particle")}、{Atri.general_word("fuck_tencent")}"
     await send_msgs(event.channel_id, to_send)
@@ -130,26 +136,36 @@ async def resend_pc_unreadable_msg_handle(_: Matcher, event: GuildMessageEvent, 
 
 async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent):
     """发送用户在该频道的最后一次发送的图片的url"""
-    query = (GuildImgRecord
-             .select()
-             .where((GuildImgRecord.channel_id == event.channel_id) & (GuildImgRecord.user_id == event.get_user_id()))
-             .order_by(GuildImgRecord.recv_time.desc())
-             .first())
+    query = (
+        GuildImgRecord.select()
+        .where(
+            (GuildImgRecord.channel_id == event.channel_id)
+            & (GuildImgRecord.user_id == event.get_user_id())
+        )
+        .order_by(GuildImgRecord.recv_time.desc())
+        .first()
+    )
 
     if query:
-        to_send = f"🔗 こちらはURLです：\n{query.content}\n{Atri.general_word("modal_particle")}、{Atri.general_word("proud")}"
+        head_banner = "◤◢◤◢◤◢◤◢🈲  banned by tencent 🈲◤◢◤◢◤◢◤◢"
+        foot_banner = "◤◢◤◢◤◢◤◢🍀tap URL above to see🍀◤◢◤◢◤◢◤◢"
+        to_send = f"🏞️🔗 画像のURLはこちらです：\n{head_banner}\n{query.content}\n{foot_banner}\n{Atri.general_word("modal_particle")}、{Atri.general_word("proud")}"
         await send_msgs(event.channel_id, to_send)
     else:
         to_send = f"{Atri.general_word("loading")}。データが見つかりません"
         await send_msgs(event.channel_id, to_send)
 
 
-async def yesterday_wordcloud_handle(_: Matcher, event: GuildMessageEvent, args: Message = CommandArg()):
+async def yesterday_wordcloud_handle(
+    _: Matcher, event: GuildMessageEvent, args: Message = CommandArg()
+):
     yesterday = datetime.now() - timedelta(days=1)
     start_time = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
     end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
     channel_id = args.extract_plain_text()
-    progress_msg = f"ワードクラウドをジェネレートしますね。{Atri.general_word("loading")}"
+    progress_msg = (
+        f"ワードクラウドをジェネレートしますね。{Atri.general_word("loading")}"
+    )
     await send_msgs(event.channel_id, progress_msg)
 
     resp = "指定されたチャンネル"
@@ -160,10 +176,14 @@ async def yesterday_wordcloud_handle(_: Matcher, event: GuildMessageEvent, args:
         channel_id = int(channel_id)
     image = await get_wordcloud_by_time(channel_id, start_time, end_time)
     if image:
-        msg = MessageSegment.text(f"{Atri.general_word("modal_particle")}、{resp}のワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}") + MessageSegment.image(image)
+        msg = MessageSegment.text(
+            f"{Atri.general_word("modal_particle")}、{resp}のワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}"
+        ) + MessageSegment.image(image)
         await send_msgs(event.channel_id, msg)
     else:
-        msg = at_user(event) + MessageSegment.text(f"{resp}のチャットレコードが足りないようです")
+        msg = at_user(event) + MessageSegment.text(
+            f"{resp}のチャットレコードが足りないようです"
+        )
         await send_msgs(event.channel_id, msg)
 
 
@@ -171,12 +191,9 @@ async def yesterday_wordcloud_handle(_: Matcher, event: GuildMessageEvent, args:
 async def yesterday_wordcloud_job():
     try:
         yesterday = datetime.now() - timedelta(days=1)
-        start_time = yesterday.replace(
-            hour=0, minute=0, second=0, microsecond=0)
-        end_time = yesterday.replace(
-            hour=23, minute=59, second=59, microsecond=0)
-        channels = query_wordcloud_generatable_channel_ids(
-            start_time, end_time)
+        start_time = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
+        channels = query_wordcloud_generatable_channel_ids(start_time, end_time)
         if len(channels) > 0:
             logger.info(f"以下频道将生成词云：{channels}")
             for channel in channels:
@@ -191,8 +208,9 @@ async def yesterday_wordcloud_job():
 
                 image = await get_wordcloud_by_time(channel, start_time, end_time)
                 if image:
-                    msg = MessageSegment.text(f"{Atri.general_word("modal_particle")}、このチャンネルのワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}") + \
-                        MessageSegment.image(image)
+                    msg = MessageSegment.text(
+                        f"{Atri.general_word("modal_particle")}、このチャンネルのワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}"
+                    ) + MessageSegment.image(image)
                     await send_msgs(channel, msg)
                 else:
                     logger.error("全频道词云图片未生成")
@@ -201,13 +219,14 @@ async def yesterday_wordcloud_job():
             notice = f"{Atri.general_word("discourse_particle")}、そろそろワードクラウドの時間です。{Atri.general_word("loading")}"
             await send_msgs(get_config()["wordcloud"]["overall_target_channel"], notice)
 
-        logger.info(f"开始生成全频道词云")
+        logger.info("开始生成全频道词云")
         image = await get_wordcloud_by_time(0, start_time, end_time)
         if image:
             # 极少数情况下，水频不会出子频词云，加个判断去掉 おまけに
             bonus_msg = "おまけに" if len(channels) > 0 else ""
-            msg = MessageSegment.text(f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}") + \
-                MessageSegment.image(image)
+            msg = MessageSegment.text(
+                f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}"
+            ) + MessageSegment.image(image)
             await send_msgs(get_config()["wordcloud"]["overall_target_channel"], msg)
         else:
             logger.error("全频道词云图片未生成")
@@ -215,20 +234,26 @@ async def yesterday_wordcloud_job():
     except Exception as ex:
         # 通常都是签名服务器错误造成的，notice很大可能也发不出去
         notice = f"{Atri.general_word("error")}"
-        await send_msgs(get_config()["debug"]["test_channel"], notice)
+        await send_msgs(get_config()["debug"]["test_channel_id"], notice)
         logger.error(f"生成词云异常：{ex}")
 
 
-def query_wordcloud_generatable_channel_ids(start_time: datetime, end_time: datetime) -> List[int]:
+def query_wordcloud_generatable_channel_ids(
+    start_time: datetime, end_time: datetime
+) -> List[int]:
     """查找符合生成词云条件的所有子频道"""
     threshold = get_config()["wordcloud"]["generation_threshold"]
     blacklist_users = get_config()["wordcloud"]["blacklist_user_ids"]
     query = (
-        GuildMessageRecord.select(GuildMessageRecord.channel_id, fn.COUNT(
-            GuildMessageRecord.channel_id).alias("cnt"))
-        .where((GuildMessageRecord.recv_time > start_time)
-               & (GuildMessageRecord.recv_time < end_time)
-               & (GuildMessageRecord.user_id.not_in(blacklist_users)))  # 排除黑名单用户
+        GuildMessageRecord.select(
+            GuildMessageRecord.channel_id,
+            fn.COUNT(GuildMessageRecord.channel_id).alias("cnt"),
+        )
+        .where(
+            (GuildMessageRecord.recv_time > start_time)
+            & (GuildMessageRecord.recv_time < end_time)
+            & (GuildMessageRecord.user_id.not_in(blacklist_users))
+        )  # 排除黑名单用户
         .group_by(GuildMessageRecord.channel_id)
         .having(fn.COUNT(GuildMessageRecord.channel_id) > threshold)  # 阈值检查
     )
@@ -250,8 +275,7 @@ async def get_wordcloud_by_time(
         expressions.append(GuildMessageRecord.channel_id == channel_id)
     else:
         blacklist_channels = get_config()["wordcloud"]["blacklist_channels"]
-        expressions.append(
-            GuildMessageRecord.channel_id.not_in(blacklist_channels))
+        expressions.append(GuildMessageRecord.channel_id.not_in(blacklist_channels))
     if blacklist_users := get_config()["wordcloud"]["blacklist_user_ids"]:
         expressions.append(GuildMessageRecord.user_id.not_in(blacklist_users))
 
@@ -267,7 +291,9 @@ def anti_repeat_process(msg: str) -> str:
     """使用jieba分词来去除同一条消息内的大量重复词语"""
     words: list[str] = jieba.analyse.extract_tags(msg)
     # 去除长度小于3的数字
-    processed_words = ["" if word.isdigit() and len(word) < 3 else word for word in words]
+    processed_words = [
+        "" if word.isdigit() and len(word) < 3 else word for word in words
+    ]
     message = " ".join(processed_words)
     return message
 
@@ -333,18 +359,48 @@ def _get_wordcloud_img(messages: List[str]) -> Optional[BytesIO]:
     if theme := get_config()["wordcloud"]["theme"]:
         wordcloud_options.setdefault("background_color", None)
         wordcloud_options.setdefault("mode", "RGBA")
-        wordcloud_options.setdefault("mask", np.array(Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["mask_path"] / f"{theme}.png"))))
-        wordcloud_options.setdefault("font_path", str(Path(__file__).parent / get_config()["wordcloud"]["theme_font_path"] / f"{theme}.otf"))
-        wordcloud_options.setdefault("color_func", ImageColorGenerator(np.array(Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["mask_path"] / f"{theme}-color.png")))))
+        wordcloud_options.setdefault(
+            "mask",
+            np.array(
+                Image.open(
+                    str(
+                        Path(__file__).parent
+                        / "resources"
+                        / theme
+                        / "textures"
+                        / "mask-shape.png"
+                    )
+                )
+            ),
+        )
+        wordcloud_options.setdefault(
+            "font_path",
+            str(Path(__file__).parent / "resources" / theme / "fonts" / "font.otf"),
+        )
+        wordcloud_options.setdefault(
+            "color_func",
+            ImageColorGenerator(
+                np.array(
+                    Image.open(
+                        str(
+                            Path(__file__).parent
+                            / "resources"
+                            / theme
+                            / "textures"
+                            / "mask-color.png"
+                        )
+                    )
+                )
+            ),
+        )
     else:
         wordcloud_options.setdefault(
-        "font_path", str(get_config()["wordcloud"]["font_path"])
-    )
+            "font_path", str(get_config()["wordcloud"]["font_path"])
+        )
         wordcloud_options.setdefault(
             "background_color", get_config()["wordcloud"]["background_color"]
         )
-        wordcloud_options.setdefault("colormap", get_config()[
-                                    "wordcloud"]["colormap"])
+        wordcloud_options.setdefault("colormap", get_config()["wordcloud"]["colormap"])
     try:
         wordcloud = WordCloud(**wordcloud_options)
         image = wordcloud.generate_from_frequencies(frequency).to_image()
@@ -352,7 +408,15 @@ def _get_wordcloud_img(messages: List[str]) -> Optional[BytesIO]:
         image.save(image_bytes, format="PNG")
         # 将图片覆盖到主题背景上
         if theme := get_config()["wordcloud"]["theme"]:
-            background = Image.open(str(Path(__file__).parent / get_config()["wordcloud"]["background_img_path"] / f"{theme}.png"))
+            background = Image.open(
+                str(
+                    Path(__file__).parent
+                    / "resources"
+                    / theme
+                    / "textures"
+                    / "background.png"
+                )
+            )
             overlay = Image.open(image_bytes)
             background.paste(overlay, (0, 0), overlay)
             result_bytes = BytesIO()
