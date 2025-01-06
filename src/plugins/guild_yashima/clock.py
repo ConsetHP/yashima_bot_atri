@@ -6,16 +6,21 @@
 @bot 我的自习数据
 @bot 自习修正 3小时30分
 """
-import re
-from datetime import timedelta
 
+import re
+from datetime import timedelta, datetime
+
+from peewee import fn
 from nonebot.adapters import Message
+from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
+from nonebot.adapters.onebot.v11 import MessageSegment
 from nonebot_plugin_apscheduler import scheduler
+from nonebot_plugin_guild_patch import GuildMessageEvent
 
-from .db import *
-from .utils import *
+from .db import ClockEventLog, ClockStatus
+from .utils.utils import get_config, at_user, get_sender_id_and_nickname
 from .send import send_msgs
 
 
@@ -34,15 +39,27 @@ async def clock_help_handle(_: Matcher, event: GuildMessageEvent):
 async def clock_my_statistics_handle(_: Matcher, event: GuildMessageEvent):
     user_id = event.get_user_id()
     # 自习次数
-    clock_count = (ClockEventLog.select()
-                   .where((ClockEventLog.status == ClockStatus.FINISH.value) & (ClockEventLog.user_id == user_id))
-                   .count())
+    clock_count = (
+        ClockEventLog.select()
+        .where(
+            (ClockEventLog.status == ClockStatus.FINISH.value)
+            & (ClockEventLog.user_id == user_id)
+        )
+        .count()
+    )
     # 自习总时长
-    total_duration = (ClockEventLog.select(fn.SUM(ClockEventLog.duration).alias('sum_value'))
-                      .where((ClockEventLog.status == ClockStatus.FINISH.value)
-                             & (ClockEventLog.user_id == user_id))
-                      .scalar())
-    msg = at_user(event) + f"你的自习次数：{clock_count}；总时长：{ClockEventLog.to_duration_desc(total_duration)}"
+    total_duration = (
+        ClockEventLog.select(fn.SUM(ClockEventLog.duration).alias("sum_value"))
+        .where(
+            (ClockEventLog.status == ClockStatus.FINISH.value)
+            & (ClockEventLog.user_id == user_id)
+        )
+        .scalar()
+    )
+    msg = (
+        at_user(event)
+        + f"你的自习次数：{clock_count}；总时长：{ClockEventLog.to_duration_desc(total_duration)}"
+    )
     await send_msgs(event.channel_id, msg)
 
 
@@ -56,12 +73,14 @@ async def clock_in_handle(_: Matcher, event: GuildMessageEvent):
     # 检查是否正在自习
     working_model = ClockEventLog.query_working(event.get_user_id())
     if working_model:
-        msg = at_user(event) + f"你已经打过卡惹"
+        msg = at_user(event) + "你已经打过卡惹"
         await send_msgs(event.channel_id, msg)
         return
     # 入库
     user_id, user_name = get_sender_id_and_nickname(event)
-    model = ClockEventLog(user_name=user_name, user_id=user_id, status=ClockStatus.WORKING.value)
+    model = ClockEventLog(
+        user_name=user_name, user_id=user_id, status=ClockStatus.WORKING.value
+    )
     model.save()
     msg = at_user(event) + "已成功打卡，开始自习"
     await send_msgs(event.channel_id, msg)
@@ -81,7 +100,10 @@ async def clock_out_handle(_: Matcher, event: GuildMessageEvent):
     # 检查是否正在自习
     working_model = ClockEventLog.query_working(event.get_user_id())
     if not working_model:
-        msg = at_user(event) + f"エラーです、你还没有开始自习呢。请 @bot 自习帮助 来查看帮助"
+        msg = (
+            at_user(event)
+            + "エラーです、你还没有开始自习呢。请 @bot 自习帮助 来查看帮助"
+        )
         await send_msgs(event.channel_id, msg)
         return
     working_model.end_time = datetime.now()
@@ -97,21 +119,27 @@ async def clock_out_handle(_: Matcher, event: GuildMessageEvent):
     #     await set_role(False, role_id, event.get_user_id())
 
 
-async def clock_correct_time_handle(_: Matcher, event: GuildMessageEvent, args: Message = CommandArg()):
+async def clock_correct_time_handle(
+    _: Matcher, event: GuildMessageEvent, args: Message = CommandArg()
+):
     model = ClockEventLog.query_overtime(event.get_user_id())
-    no_record_err = at_user(event) + f"没有需要修正的记录"
-    time_format_err = at_user(event) + f"エラーです、时间格式不正确。正确的格式应为'3小时30分'、'2小时'、'45分'"
-    success_msg = f"学習しました、已修正上次自习时长为{model.duration_desc()}"
+    no_record_err = at_user(event) + "没有需要修正的记录"
+    time_format_err = (
+        at_user(event)
+        + "エラーです、时间格式不正确。正确的格式应为'3小时30分'、'2小时'、'45分'"
+    )
     if not model:
         await send_msgs(event.channel_id, no_record_err)
         return
     correct_time = args.extract_plain_text().strip()
-    match = re.match(r"((?P<hour>\d+)(时|小时))?((?P<minute>\d+)(分|分钟))?", correct_time)
+    match = re.match(
+        r"((?P<hour>\d+)(时|小时))?((?P<minute>\d+)(分|分钟))?", correct_time
+    )
     if not match:
         await send_msgs(event.channel_id, time_format_err)
         return
-    hour = int(match.group('hour')) if match.group('hour') else 0
-    minute = int(match.group('minute')) if match.group('minute') else 0
+    hour = int(match.group("hour")) if match.group("hour") else 0
+    minute = int(match.group("minute")) if match.group("minute") else 0
     total_minute = 60 * hour + minute
     if total_minute == 0:
         await send_msgs(event.channel_id, time_format_err)
@@ -123,32 +151,38 @@ async def clock_correct_time_handle(_: Matcher, event: GuildMessageEvent, args: 
     model.update_duration()
     model.status = ClockStatus.FINISH.value
     model.save()
+    success_msg = f"学習しました、已修正上次自习时长为{model.duration_desc()}"
 
     await send_msgs(event.channel_id, success_msg)
 
 
-@scheduler.scheduled_job('interval', minutes=1, id="clock_find_overtime_and_process")
+@scheduler.scheduled_job("interval", minutes=1, id="clock_find_overtime_and_process")
 async def find_overtime_and_process():
-    overtime = get_config()['guild']['clock_overtime']
-    model_iter = (ClockEventLog.select()
-                  .where((ClockEventLog.status == ClockStatus.WORKING.value)
-                         & (ClockEventLog.start_time < (datetime.now() - timedelta(minutes=overtime)))))
+    overtime = get_config()["guild"]["clock_overtime"]
+    model_iter = ClockEventLog.select().where(
+        (ClockEventLog.status == ClockStatus.WORKING.value)
+        & (ClockEventLog.start_time < (datetime.now() - timedelta(minutes=overtime)))
+    )
     for model in model_iter:
         model.end_time = model.start_time + timedelta(minutes=overtime)
         model.status = ClockStatus.OVERTIME.value
         model.update_duration()
         model.save()
-        msg = MessageSegment.at(model.user_id) + "自习已超时自动签退，记得修正数据ヾ(￣▽￣)。"
+        msg = (
+            MessageSegment.at(model.user_id)
+            + "自习已超时自动签退，记得修正数据ヾ(￣▽￣)。（如果不知道如何修正，请查看子频道精华消息或 @bot 自习帮助）"
+        )
         await send_msgs(clock_channel_id(), msg)
     logger.debug("find_overtime_and_process end")
 
 
 def clock_channel_id() -> str:
-    return get_config()['guild']['clock_channel_id']
+    return get_config()["guild"]["clock_channel_id"]
 
 
 def is_clock_channel(event: GuildMessageEvent) -> bool:
     return clock_channel_id() == str(event.channel_id)
+
 
 def clock_overtime_message(overtime_model: ClockEventLog) -> str:
     return f"残念ながら、上一次自习({overtime_model.start_time.month}月{overtime_model.start_time.day}日)\n你被自动签退了，请先按命令格式'/自习修正 x小时x分'修正上次的自习数据哦（将x替换成你实际自习的时间）"

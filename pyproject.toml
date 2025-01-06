@@ -26,6 +26,7 @@ plugins = [
     "nonebot_plugin_apscheduler",
     "nonebot_plugin_guild_patch",
     "nonebot_plugin_saa",
+    "nonebot_plugin_htmlrender",
 ]
 
 # NoneBot 加载的插件文件夹列表，会加载这些文件夹下的所有 Python 模块
