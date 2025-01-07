@@ -1,3 +1,5 @@
+import re
+
 from collections.abc import Sequence
 from io import BytesIO
 from pathlib import Path
@@ -23,6 +25,37 @@ class Ht2iTheme(Theme):
     name: Literal["ht2i"] = "ht2i"
     need_browser: bool = True
 
+    def _replace_single_newline_with_double(self, text: str) -> str:
+        """将单次换行转换成两次换行，避免渲染成图片后单次换行不换行"""
+        replaced_text = re.sub(r"(?<!\n)\n(?!\n)", "\n\n", text)
+        return replaced_text
+
+    def _md_process(self, text: str) -> str:
+        """处理文本中的 markdown 字符和换行符"""
+        markdown_special_chars = {
+            "#": "&#35;",
+            "*": "&#42;",
+            "_": "&#95;",
+            "`": "&#96;",
+            "[": "&#91;",
+            "]": "&#93;",
+            "(": "&#40;",
+            ")": "&#41;",
+            "~": "&#126;",
+            "<": "&#60;",
+            ">": "&#62;",
+            "-": "&#45;",
+            "+": "&#43;",
+            "=": "&#61;",
+            "{": "&#123;",
+            "}": "&#125;",
+            ".": "&#46;",
+            "!": "&#33;",
+        }
+        for char, escaped in markdown_special_chars.items():
+            text = text.replace(char, escaped)
+        return self._replace_single_newline_with_double(text)
+
     async def _text_render(self, text: str):
         from nonebot_plugin_htmlrender import md_to_pic
 
@@ -38,20 +71,24 @@ class Ht2iTheme(Theme):
         md_text += f"## {post.title}\n\n" if post.title else ""
 
         if isinstance(post, HTMLContentSupport):
-            content = await post.get_html_content()
+            content = self._md_process(await post.get_html_content())
         else:
-            content = await post.get_content()
+            content = self._md_process(await post.get_content())
         md_text += content if len(content) < 500 else f"{content[:500]}..."
         md_text += "\n\n"
         if rp := post.repost:
             md_text += f"> 转发自 {f'**{rp.nickname}**' if rp.nickname else ''}:  \n"
             md_text += f"> {rp.title}  \n" if rp.title else ""
             if isinstance(rp, HTMLContentSupport):
-                rp_content = await rp.get_html_content()
+                rp_content = self._md_process(await rp.get_html_content())
             else:
-                rp_content = await rp.get_content()
+                rp_content = self._md_process(await rp.get_content())
 
-            md_text += ">  \n> " + rp_content if len(rp_content) < 500 else f"{rp_content[:500]}..." + "  \n"
+            md_text += (
+                ">  \n> " + rp_content
+                if len(rp_content) < 500
+                else f"{rp_content[:500]}..." + "  \n"
+            )
         md_text += "\n\n"
 
         msgs: list[MessageSegment] = [await self._text_render(md_text)]
