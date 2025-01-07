@@ -27,16 +27,19 @@ def reload_config() -> TOMLDocument:
     global bot_config
     bot_config = load_config()
     return bot_config
+
+
 # region config end
 
 
-def process_url(url: str)-> str:
+def process_url(url: str) -> str:
     """防止被藤子二度解析 + 防止被协议适配器拒绝"""
     if url.count("www.bilibili.com") != 0:
-            url = url.replace("www.bilibili.com", "(请手动修改为b站域名)")
+        url = url.replace("www.bilibili.com", "(请手动修改为b站域名)")
     else:
         url = url.replace("http", "http\u200b")
-    return url
+    hint = "（请手动复制到浏览器中打开）" + url
+    return hint
 
 
 def at_user(event: GuildMessageEvent) -> MessageSegment:
@@ -48,7 +51,7 @@ def get_sender_id_and_nickname(event: GuildMessageEvent) -> Tuple[str, str]:
 
 
 def get_active_guild_id() -> str:
-    return bot_config['guild']['id']
+    return bot_config["guild"]["id"]
 
 
 async def get_guild_rules(bot: Bot) -> List[dict]:
@@ -68,16 +71,17 @@ async def get_role_id_named(role_name: str) -> Optional[str]:
     if not guild_roles:
         await init_guild_roles()
     for role in guild_roles:
-        if role['role_name'] == role_name:
-            return role['role_id']
+        if role["role_name"] == role_name:
+            return role["role_id"]
     logger.warning(f"未匹配到身分组[{role_name}]")
     return None
 
 
 async def set_role(active: bool, role_id: str, user_id: str):
     await get_bot().set_guild_member_role(
-        guild_id=get_active_guild_id(), set=active, role_id=role_id, users=[user_id])
-    
+        guild_id=get_active_guild_id(), set=active, role_id=role_id, users=[user_id]
+    )
+
 
 async def is_admin_user(event: GuildMessageEvent) -> bool:
-    return event.get_user_id() in bot_config['auth']['admin']
+    return event.get_user_id() in bot_config["auth"]["admin"]
