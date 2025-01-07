@@ -25,7 +25,6 @@ plugins = [
     "nonebot_plugin_logpile",
     "nonebot_plugin_apscheduler",
     "nonebot_plugin_guild_patch",
-    "nonebot_plugin_saa",
     "nonebot_plugin_htmlrender",
 ]
 

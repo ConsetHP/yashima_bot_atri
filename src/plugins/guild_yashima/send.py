@@ -10,7 +10,6 @@ from nonebot import get_bot
 from nonebot.adapters.onebot.v11.exception import ActionFailed
 from nonebot.adapters import Message
 from nonebot.log import logger
-from nonebot_plugin_saa.auto_select_bot import refresh_bots
 
 from .utils.utils import get_config, get_active_guild_id
 
@@ -21,18 +20,14 @@ MESSAGE_SEND_RETRY = get_config()["general"]["send_failure_retry"]
 
 _MESSAGE_DISPATCH_TASKS: set[asyncio.Task] = set()
 
-GUILD_ID = get_active_guild_id()
-QQ_BOT_ID = get_config()["general"]["bot_id"]
-
 
 async def _do_send(channel_id: str, msg: Message | str):
     try:
-        await get_bot(QQ_BOT_ID).send_guild_channel_msg(
-            guild_id=GUILD_ID, channel_id=channel_id, message=msg
+        await get_bot(get_config()["general"]["bot_id"]).send_guild_channel_msg(
+            guild_id=get_active_guild_id(), channel_id=channel_id, message=msg
         )
     except ActionFailed:
-        await refresh_bots()
-        logger.warning("发送消息失败，刷新机器人中")
+        logger.warning("发送消息失败")
 
 
 async def do_send_msgs():
