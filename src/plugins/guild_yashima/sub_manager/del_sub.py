@@ -23,7 +23,7 @@ def do_del_sub(del_sub: type[Matcher]):
         sub_list = await config.list_subscribe(channel_info)
         if not sub_list:
             await del_sub.finish("暂无已订阅账号\n请使用“添加订阅”命令添加订阅")
-        res = "订阅的帐号为：\n"
+        res = "当前子频道订阅的帐号为：\n"
         state["sub_table"] = {}
         for index, sub in enumerate(sub_list, 1):
             state["sub_table"][index] = {

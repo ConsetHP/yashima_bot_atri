@@ -14,7 +14,6 @@ from nonebot.plugin import (
 from nonebot.rule import to_me
 
 require("nonebot_plugin_apscheduler")
-require("nonebot_plugin_saa")
 require("nonebot_plugin_guild_patch")
 
 from nonebot_plugin_guild_patch import GuildMessageEvent  # noqa: E402

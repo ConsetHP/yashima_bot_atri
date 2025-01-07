@@ -19,7 +19,8 @@ def do_query_sub(query_sub: type[Matcher]):
         sub_list = await config.list_subscribe(event.channel_id)
         if not sub_list:
             await query_sub.finish("暂无已订阅账号\n请使用“添加订阅”命令添加订阅")
-        res = "订阅的帐号为：\n"
+
+        res = "当前子频道订阅的帐号为：\n"
         for sub in sub_list:
             res += f"【{sub.target.platform_name}】 {sub.target.target_name} ({sub.target.target})\n"
             # 有bug，待修复
