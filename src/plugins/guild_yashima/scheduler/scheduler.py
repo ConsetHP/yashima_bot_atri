@@ -22,14 +22,18 @@ class Schedulable:
 
 class Scheduler:
     schedulable_list: list[Schedulable]  # for load weight from db
-    batch_api_target_cache: dict[str, dict[Target, list[Target]]]  # platform_name -> (target -> [target])
+    batch_api_target_cache: dict[
+        str, dict[Target, list[Target]]
+    ]  # platform_name -> (target -> [target])
     batch_platform_name_targets_cache: dict[str, list[Target]]
     client_mgr: ClientManager
 
     def __init__(
         self,
         scheduler_config: type[Site],
-        schedulables: list[tuple[str, Target, bool]],  # [(platform_name, target, use_batch)]
+        schedulables: list[
+            tuple[str, Target, bool]
+        ],  # [(platform_name, target, use_batch)]
         platform_name_list: list[str],
     ):
         self.name = scheduler_config.name
@@ -46,7 +50,12 @@ class Scheduler:
             if use_batch:
                 self.batch_platform_name_targets_cache[platform_name].append(target)
             self.schedulable_list.append(
-                Schedulable(platform_name=platform_name, target=target, current_weight=0, use_batch=use_batch)
+                Schedulable(
+                    platform_name=platform_name,
+                    target=target,
+                    current_weight=0,
+                    use_batch=use_batch,
+                )
             )
         self._refresh_batch_api_target_cache()
 
@@ -76,9 +85,16 @@ class Scheduler:
         self.pre_weight_val = 0
         cur_max_schedulable = None
         for schedulable in self.schedulable_list:
-            schedulable.current_weight += cur_weight[f"{schedulable.platform_name}-{schedulable.target}"]
-            weight_sum += cur_weight[f"{schedulable.platform_name}-{schedulable.target}"]
-            if not cur_max_schedulable or cur_max_schedulable.current_weight < schedulable.current_weight:
+            schedulable.current_weight += cur_weight[
+                f"{schedulable.platform_name}-{schedulable.target}"
+            ]
+            weight_sum += cur_weight[
+                f"{schedulable.platform_name}-{schedulable.target}"
+            ]
+            if (
+                not cur_max_schedulable
+                or cur_max_schedulable.current_weight < schedulable.current_weight
+            ):
                 cur_max_schedulable = schedulable
         assert cur_max_schedulable
         cur_max_schedulable.current_weight -= weight_sum
@@ -87,24 +103,32 @@ class Scheduler:
     async def exec_fetch(self):
         if not (schedulable := await self.get_next_schedulable()):
             return
-        logger.trace(f"scheduler {self.name} fetching next target: [{schedulable.platform_name}]{schedulable.target}")
+        logger.trace(
+            f"scheduler {self.name} fetching next target: [{schedulable.platform_name}]{schedulable.target}"
+        )
 
         context = ProcessContext(self.client_mgr)
 
         try:
             platform_obj = platform_manager[schedulable.platform_name](context)
             if schedulable.use_batch:
-                batch_targets = self.batch_api_target_cache[schedulable.platform_name][schedulable.target]
+                batch_targets = self.batch_api_target_cache[schedulable.platform_name][
+                    schedulable.target
+                ]
                 sub_units = []
                 for batch_target in batch_targets:
-                    channel_info = await config.get_platform_target_subscribers(schedulable.platform_name, batch_target)
+                    channel_info = await config.get_platform_target_subscribers(
+                        schedulable.platform_name, batch_target
+                    )
                     sub_units.append(SubUnit(batch_target, channel_info))
                 to_send = await platform_obj.do_batch_fetch_new_post(sub_units)
             else:
                 send_channel_info_list = await config.get_platform_target_subscribers(
                     schedulable.platform_name, schedulable.target
                 )
-                to_send = await platform_obj.do_fetch_new_post(SubUnit(schedulable.target, send_channel_info_list))
+                to_send = await platform_obj.do_fetch_new_post(
+                    SubUnit(schedulable.target, send_channel_info_list)
+                )
         except SkipRequestException as err:
             logger.debug(f"skip request: {err}")
         except Exception as err:
@@ -121,24 +145,27 @@ class Scheduler:
             for send_post in send_list:
                 logger.info(f"发送至子频道 {per_channel}: {send_post}")
                 try:
-                    for msg in await send_post.generate_messages():
-                        await send_msgs(
-                            per_channel,
-                            msg,
-                        )
+                    await send_msgs(
+                        per_channel,
+                        await send_post.generate_messages(),
+                    )
                 except RuntimeError:
                     logger.warning("no bot connected")
 
     def insert_new_schedulable(self, platform_name: str, target: Target):
         self.pre_weight_val += 1000
-        new_schedulable = Schedulable(platform_name, target, 1000, platform_manager[platform_name].use_batch)
+        new_schedulable = Schedulable(
+            platform_name, target, 1000, platform_manager[platform_name].use_batch
+        )
 
         if new_schedulable.use_batch:
             self.batch_platform_name_targets_cache[platform_name].append(target)
             self._refresh_batch_api_target_cache()
 
         self.schedulable_list.append(new_schedulable)
-        logger.info(f"insert [{platform_name}]{target} to Scheduler({self.scheduler_config.name})")
+        logger.info(
+            f"insert [{platform_name}]{target} to Scheduler({self.scheduler_config.name})"
+        )
 
     def delete_schedulable(self, platform_name, target: Target):
         if platform_manager[platform_name].use_batch:
@@ -149,10 +176,15 @@ class Scheduler:
             return
         to_find_idx = None
         for idx, schedulable in enumerate(self.schedulable_list):
-            if schedulable.platform_name == platform_name and schedulable.target == target:
+            if (
+                schedulable.platform_name == platform_name
+                and schedulable.target == target
+            ):
                 to_find_idx = idx
                 break
         if to_find_idx is not None:
             deleted_schdulable = self.schedulable_list.pop(to_find_idx)
             self.pre_weight_val -= deleted_schdulable.current_weight
-            logger.info(f"delete [{platform_name}]{target} from Scheduler({self.scheduler_config.name})")
+            logger.info(
+                f"delete [{platform_name}]{target} from Scheduler({self.scheduler_config.name})"
+            )

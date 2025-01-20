@@ -5,6 +5,7 @@
 
 import asyncio
 from collections import deque
+from typing import Union
 
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11.exception import ActionFailed
@@ -68,9 +69,13 @@ async def _send_msgs_dispatch(channel_id: str, msg: Message | str):
         task.add_done_callback(_MESSAGE_DISPATCH_TASKS.discard)
 
 
-async def send_msgs(channel_id: str | int, msg: Message | str):
+async def send_msgs(channel_id: str | int, msg: Union[Message, str, list[Message]]):
     """将消息发送任务添加至队列"""
     if type(channel_id) is int:
         channel_id = str(channel_id)
-    await _send_msgs_dispatch(channel_id, msg)
+    if type(msg) is list:
+        for per_msg in msg:
+            await _send_msgs_dispatch(channel_id, per_msg)
+    else:
+        await _send_msgs_dispatch(channel_id, msg)
     return
