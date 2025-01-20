@@ -5,10 +5,9 @@
 
 import asyncio
 import concurrent.futures
-import datetime
 import json
 import re
-from datetime import timedelta
+from datetime import timedelta, datetime
 from functools import partial, reduce
 from io import BytesIO
 from typing import Dict, List, Optional
@@ -125,12 +124,12 @@ async def resend_pc_unreadable_msg_handle(
     if len(title) > 50:
         title = title[:50] + "…"
     elif not title:
-        title = f"{Atri.general_word("error")}：タイトルを解析することができません"
+        title = f"{Atri.general_word('error')}：タイトルを解析することができません"
 
     # 处理url防止qq二度解析（在http后添加一个零宽空格）
     link = process_url(link)
 
-    to_send = f"🔗 こちらはURLです：\n{title}\n{link}\n{Atri.general_word("modal_particle")}、{Atri.general_word("fuck_tencent")}"
+    to_send = f"🔗 こちらはURLです：\n{title}\n{link}\n{Atri.general_word('modal_particle')}、{Atri.general_word('fuck_tencent')}"
     await send_msgs(event.channel_id, to_send)
 
 
@@ -147,12 +146,25 @@ async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent
     )
 
     if query:
-        head_banner = "◤◢◤◢◤◢◤◢🈲  banned by tencent 🈲◤◢◤◢◤◢◤◢"
-        foot_banner = "◤◢◤◢◤◢◤◢🍀tap URL above to see🍀◤◢◤◢◤◢◤◢"
-        to_send = f"🏞️🔗 画像のURLはこちらです：\n{head_banner}\n{query.content}\n{foot_banner}\n{Atri.general_word("modal_particle")}、{Atri.general_word("proud")}"
+        to_send: list[Message] = []
+        head_banner = Message(
+            MessageSegment.text("◤◢◤◢◤◢◤◢◤◢◤◢\n🈲  banned by tencent 🈲\n◤◢◤◢◤◢◤◢◤◢◤◢")
+        )
+        hint_msg = Message(
+            MessageSegment.text(
+                "🏞️🔗 画像のURLはこちらです：\n（如果出现'已停止访问该网页'，请手动复制 URL 到正规浏览器中打开）"
+            )
+        )
+        img_url = Message(MessageSegment.text(f"{query.content}"))
+        foot_banner = Message(
+            MessageSegment.text(
+                f"◤◢◤◢◤◢◤◢◤◢◤◢\n🍀tap URL above to see🍀\n◤◢◤◢◤◢◤◢◤◢◤◢\n{Atri.general_word('modal_particle')}、{Atri.general_word('proud')}"
+            )
+        )
+        to_send.extend([head_banner, hint_msg, img_url, foot_banner])
         await send_msgs(event.channel_id, to_send)
     else:
-        to_send = f"{Atri.general_word("loading")}。データが見つかりません"
+        to_send = f"{Atri.general_word('loading')}。データが見つかりません"
         await send_msgs(event.channel_id, to_send)
 
 
@@ -164,7 +176,7 @@ async def yesterday_wordcloud_handle(
     end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
     channel_id = args.extract_plain_text()
     progress_msg = (
-        f"ワードクラウドをジェネレートしますね。{Atri.general_word("loading")}"
+        f"ワードクラウドをジェネレートしますね。{Atri.general_word('loading')}"
     )
     await send_msgs(event.channel_id, progress_msg)
 
@@ -177,7 +189,7 @@ async def yesterday_wordcloud_handle(
     image = await get_wordcloud_by_time(channel_id, start_time, end_time)
     if image:
         msg = MessageSegment.text(
-            f"{Atri.general_word("modal_particle")}、{resp}のワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}"
+            f"{Atri.general_word('modal_particle')}、{resp}のワードクラウドがジェネレートしました🎉、{Atri.general_word('proud')}"
         ) + MessageSegment.image(image)
         await send_msgs(event.channel_id, msg)
     else:
@@ -203,20 +215,20 @@ async def yesterday_wordcloud_job():
 
                 logger.info(f"开始生成词云，频道ID:{channel}")
 
-                notice = f"{Atri.general_word("discourse_particle")}、そろそろワードクラウドの時間です。{Atri.general_word("loading")}"
+                notice = f"{Atri.general_word('discourse_particle')}、そろそろワードクラウドの時間です。{Atri.general_word('loading')}"
                 await send_msgs(channel, notice)
 
                 image = await get_wordcloud_by_time(channel, start_time, end_time)
                 if image:
                     msg = MessageSegment.text(
-                        f"{Atri.general_word("modal_particle")}、このチャンネルのワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}"
+                        f"{Atri.general_word('modal_particle')}、このチャンネルのワードクラウドがジェネレートしました🎉、{Atri.general_word('proud')}"
                     ) + MessageSegment.image(image)
                     await send_msgs(channel, msg)
                 else:
                     logger.error("全频道词云图片未生成")
                     raise Exception("词云图片未生成")
         else:
-            notice = f"{Atri.general_word("discourse_particle")}、そろそろワードクラウドの時間です。{Atri.general_word("loading")}"
+            notice = f"{Atri.general_word('discourse_particle')}、そろそろワードクラウドの時間です。{Atri.general_word('loading')}"
             await send_msgs(get_config()["wordcloud"]["overall_target_channel"], notice)
 
         logger.info("开始生成全频道词云")
@@ -225,7 +237,7 @@ async def yesterday_wordcloud_job():
             # 极少数情况下，水频不会出子频词云，加个判断去掉 おまけに
             bonus_msg = "おまけに" if len(channels) > 0 else ""
             msg = MessageSegment.text(
-                f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、{Atri.general_word("proud")}"
+                f"{bonus_msg}💎ヤシマ作戦指揮部💎のフルワードクラウドがジェネレートしました🎉、{Atri.general_word('proud')}"
             ) + MessageSegment.image(image)
             await send_msgs(get_config()["wordcloud"]["overall_target_channel"], msg)
         else:
@@ -233,7 +245,7 @@ async def yesterday_wordcloud_job():
             raise Exception("词云图片未生成")
     except Exception as ex:
         # 通常都是签名服务器错误造成的，notice很大可能也发不出去
-        notice = f"{Atri.general_word("error")}"
+        notice = f"{Atri.general_word('error')}"
         await send_msgs(get_config()["debug"]["test_channel_id"], notice)
         logger.error(f"生成词云异常：{ex}")
 
