@@ -36,10 +36,28 @@ def process_url(url: str) -> str:
     """防止被藤子二度解析 + 防止被协议适配器拒绝"""
     if url.count("www.bilibili.com") != 0:
         url = url.replace("www.bilibili.com", "(请手动修改为b站域名)")
+    elif url.count("mp.weixin.qq.com") != 0:
+        # 微信的 URL 贼长，手动精简下
+        base_url, query_string = url.split("?", 1)
+        params_to_remove = [
+            "chksm",
+            "mpshare",
+            "scene",
+            "srcid",
+            "sharer_shareinfo",
+            "sharer_shareinfo_first",
+        ]
+        query_params = query_string.split("&")
+        filtered_params = [
+            param
+            for param in query_params
+            if not any(param.startswith(f"{key}=") for key in params_to_remove)
+        ]
+        url = f"{base_url}?{'&'.join(filtered_params)}"
     else:
         url = url.replace("http", "http\u200b")
-    hint = "（请手动复制到浏览器中打开）" + url
-    return hint
+    processed = "（PC only）" + url
+    return processed
 
 
 def at_user(event: GuildMessageEvent) -> MessageSegment:
