@@ -114,11 +114,16 @@ async def resend_pc_unreadable_msg_handle(
         link = get_json("$.meta.detail_1.qqdocurl")
         title = get_json("$.meta.detail_1.desc")
     elif app == "com.tencent.structmsg":
+        # 藤子更新了协议，理论上这个已经失效了，但以防万一还是留着
+        view = get_json("$.view")
+        link = get_json(f"$.meta.{view}.jumpUrl")
+        title = get_json(f"$.meta.{view}.title")
+    elif app == "com.tencent.tuwen.lua":
         view = get_json("$.view")
         link = get_json(f"$.meta.{view}.jumpUrl")
         title = get_json(f"$.meta.{view}.title")
 
-    if not link or len(link) > 600 or not link.startswith("http"):
+    if not link or not link.startswith("http"):
         logger.warning(f"链接异常：{link}")
         return
     if len(title) > 50:
@@ -129,7 +134,18 @@ async def resend_pc_unreadable_msg_handle(
     # 处理url防止qq二度解析（在http后添加一个零宽空格）
     link = process_url(link)
 
-    to_send = f"🔗 こちらはURLです：\n{title}\n{link}\n{Atri.general_word('modal_particle')}、{Atri.general_word('fuck_tencent')}"
+    if len(link) > 300:
+        logger.warning(f"链接过长，将不会发送：{link}")
+        return
+    to_send: list[Message] = []
+    hint_msg = Message(MessageSegment.text("🔗 こちらはURLです："))
+    content = Message(MessageSegment.text(f"{title}\n{link}"))
+    footer = Message(
+        MessageSegment.text(
+            f"{Atri.general_word('modal_particle')}、{Atri.general_word('fuck_tencent')}"
+        )
+    )
+    to_send.extend([hint_msg, content, footer])
     await send_msgs(event.channel_id, to_send)
 
 
