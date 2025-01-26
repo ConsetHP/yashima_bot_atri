@@ -1,20 +1,16 @@
-from datetime import datetime
-
 import asyncio
 from collections.abc import Awaitable, Callable, Sequence
-from datetime import time
 from typing import Union, List
 
 from peewee import IntegrityError
 
-from .types import Category, Tag, TimeWeightConfig, ChannelSubInfo, WeightConfig
+from .types import Category, Tag, ChannelSubInfo
 from .types import Target as T_Target
 from .db import (
     db,
     GuildSubscribedChannel,
     SubscribeTarget,
     Subscribe,
-    ScheduleTimeWeight,
 )
 
 
@@ -22,12 +18,6 @@ class SubscribeDupException(Exception): ...
 
 
 class NoSuchTargetException(Exception): ...
-
-
-def _get_time():
-    dt = datetime.now()
-    cur_time = time(hour=dt.hour, minute=dt.minute, second=dt.second)
-    return cur_time
 
 
 class DBConfig:
@@ -89,7 +79,7 @@ class DBConfig:
 
     @db.atomic()
     async def list_subscribe(self, channel_id: int) -> Sequence[Subscribe]:
-        """获取订阅数据"""
+        """获取特定频道的订阅数据"""
         query = (
             Subscribe.select(Subscribe, GuildSubscribedChannel, SubscribeTarget)
             # 关联 GuildSubscribedChannel 表
@@ -106,7 +96,7 @@ class DBConfig:
 
     @db.atomic()
     async def list_subs_with_all_info(self) -> Sequence[Subscribe]:
-        """获取数据库中带有user、target信息的subscribe数据"""
+        """获取数据库中所有频道的订阅数据"""
         query = (
             Subscribe.select(Subscribe, GuildSubscribedChannel, SubscribeTarget)
             .join(
@@ -172,69 +162,10 @@ class DBConfig:
         return list(query)
 
     @db.atomic()
-    async def get_time_weight_config(
-        self, target: T_Target, platform_name: str
-    ) -> WeightConfig:
-        """获取时间权重配置"""
-        time_weight_conf = (
-            ScheduleTimeWeight.select()
-            .join(SubscribeTarget, on=(ScheduleTimeWeight.target == SubscribeTarget.id))
-            .where(
-                (SubscribeTarget.platform_name == platform_name)
-                & (SubscribeTarget.target == target)
-            )
-        )
-        target_obj = SubscribeTarget.get_or_none(
-            (SubscribeTarget.platform_name == platform_name)
-            & (SubscribeTarget.target == target)
-        )
-        if not target_obj:
-            raise NoSuchTargetException
-
-        return WeightConfig(
-            default=target_obj.default_schedule_weight,
-            time_config=[
-                TimeWeightConfig(
-                    start_time=conf.start_time,
-                    end_time=conf.end_time,
-                    weight=conf.weight,
-                )
-                for conf in time_weight_conf
-            ],
-        )
-
-    @db.atomic()
-    async def update_time_weight_config(
-        self, target: T_Target, platform_name: str, conf: WeightConfig
-    ):
-        """更新时间权重配置"""
-        target_obj = SubscribeTarget.get_or_none(
-            (SubscribeTarget.platform_name == platform_name)
-            & (SubscribeTarget.target == target)
-        )
-        if not target_obj:
-            raise NoSuchTargetException
-
-        target_obj.default_schedule_weight = conf.default
-        target_obj.save()
-
-        ScheduleTimeWeight.delete().where(
-            ScheduleTimeWeight.target == target_obj.id
-        ).execute()
-
-        for time_conf in conf.time_config:
-            ScheduleTimeWeight.create(
-                start_time=time_conf.start_time,
-                end_time=time_conf.end_time,
-                weight=time_conf.weight,
-                target=target_obj,
-            )
-
-    @db.atomic()
     async def get_current_weight_val(self, platform_list: list[str]) -> dict[str, int]:
         """获取当前权重值"""
         res = {}
-        cur_time = _get_time()
+        # cur_time = _get_time()
         with db.atomic():
             targets = SubscribeTarget.select(
                 SubscribeTarget.platform_name,
@@ -244,13 +175,6 @@ class DBConfig:
             for target in targets:
                 key = f"{target.platform_name}-{target.target}"
                 weight = target.default_schedule_weight
-                for time_conf in target.time_weight:
-                    if (
-                        time_conf.start_time <= cur_time
-                        and time_conf.end_time > cur_time
-                    ):
-                        weight = time_conf.weight
-                        break
                 res[key] = weight
         return res
 
@@ -285,7 +209,7 @@ class DBConfig:
         """清空数据库，用于单元测试清理环境"""
         GuildSubscribedChannel.delete().execute()
         SubscribeTarget.delete().execute()
-        ScheduleTimeWeight.delete().execute()
+        # ScheduleTimeWeight.delete().execute()
         Subscribe.delete().execute()
 
 
