@@ -54,6 +54,8 @@ def process_url(url: str) -> str:
             if not any(param.startswith(f"{key}=") for key in params_to_remove)
         ]
         url = f"{base_url}?{'&'.join(filtered_params)}"
+    elif url.count("m.weibo.cn") != 0:
+        url = url.replace("weibo", "【删】weibo")
     else:
         url = url.replace("http", "http\u200b")
     processed = "（PC only）" + url
