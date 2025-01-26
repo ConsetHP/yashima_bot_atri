@@ -149,6 +149,12 @@ async def resend_pc_unreadable_msg_handle(
     await send_msgs(event.channel_id, to_send)
 
 
+async def test_sendable_url_handle(_: Matcher, event: GuildMessageEvent):
+    """测试特定 URL 是否能正常发送"""
+    test_url = "https://m.【删】weibo.cn"
+    await send_msgs(event.channel_id, test_url)
+
+
 async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent):
     """发送用户在该频道的最后一次发送的图片的url"""
     query = (
