@@ -50,7 +50,6 @@ def init_database(db_path: str):
             GuildImgRecord,
             GuildSubscribedChannel,
             SubscribeTarget,
-            ScheduleTimeWeight,
             Subscribe,
         ]
     )

@@ -48,6 +48,7 @@ from .records import (  # noqa: E402
     resend_pc_unreadable_msg_handle,
     yesterday_wordcloud_handle,
     resend_system_recalled_img_handle,
+    test_sendable_url_handle,
 )
 from .db import init_database  # noqa: E402
 from .utils.utils import get_config, is_admin_user, reload_config, at_user  # noqa: E402
@@ -126,6 +127,11 @@ recover_last_img = on_fullmatch(
 mc_to_qq_msg = on_message(rule=mc_msg_rule, handlers=[mc_msg_handle])
 mc_to_qq_notice = on_notice(rule=mc_msg_rule, handlers=[mc_notice_handle])
 qq_to_mc_msg = on_message(rule=is_minecraft_channel, handlers=[qq_msg_handle])
+
+# 测试 URL 发送相关
+test_sendable_url = on_fullmatch(
+    "测试url发送", handlers=[test_sendable_url_handle], permission=is_admin_user
+)
 
 
 @reload_config_matcher.handle()
