@@ -1,3 +1,5 @@
+from ast import literal_eval
+
 from nonebot.matcher import Matcher
 from nonebot.params import Arg  # noqa: F401
 from nonebot.adapters.onebot.v11 import Message
@@ -23,14 +25,18 @@ def do_query_sub(query_sub: type[Matcher]):
         res = "当前子频道订阅的帐号为：\n"
         for sub in sub_list:
             res += f"【{sub.target.platform_name}】 {sub.target.target_name} ({sub.target.target})\n"
-            # 有bug，待修复
-            # if platform := platform_manager.get(sub.target.platform_name):
-            #     if platform.categories:
-            #         res += " [{}]".format(", ".join(platform.categories[Category(x)] for x in sub.categories))
-            #     if platform.enable_tag:
-            #         res += " {}".format(", ".join(sub.tags))
-            # else:
-            #     res += f" （平台 {sub.target.platform_name} 已失效，请删除此订阅）"
-            # if res[-1] != "\n":
-            #     res += "\n"
+            if platform := platform_manager.get(sub.target.platform_name):
+                if platform.categories:
+                    res += " [{}]".format(
+                        ", ".join(
+                            platform.categories[Category(x)]
+                            for x in literal_eval(sub.categories)
+                        )
+                    )
+                if platform.enable_tag:
+                    res += " {}".format(", ".join(literal_eval(sub.tags)))
+            else:
+                res += f" （平台 {sub.target.platform_name} 已失效，请删除此订阅）"
+            if res[-1] != "\n":
+                res += "\n"
         await query_sub.finish(Message(await parse_text(res)))

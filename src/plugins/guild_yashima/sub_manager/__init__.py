@@ -46,14 +46,20 @@ del_sub_matcher.handle()(set_target_channel_id)
 do_del_sub(del_sub_matcher)
 
 # debug only，使用完需要重启bot
-del_sub_db_matcher = on_command("清空订阅数据库", rule=to_me(), permission=is_admin_user, block=True)
+del_sub_db_matcher = on_command(
+    "清空订阅数据库", rule=to_me(), permission=is_admin_user, block=True
+)
+
+
 @del_sub_db_matcher.handle()
 async def _():
     await config.clear_db()
     await del_sub_db_matcher.finish("已清空")
 
 
-channel_manage_matcher = on_command("子频道订阅管理", rule=to_me(), permission=is_admin_user, block=True)
+channel_manage_matcher = on_command(
+    "子频道订阅管理", rule=to_me(), permission=is_admin_user, block=True
+)
 
 channel_handle_cancel = gen_handle_cancel(channel_manage_matcher, "已取消")
 
@@ -65,9 +71,8 @@ async def send_group_list(bot: Bot, event: GuildMessageEvent, state: T_State):
     channel_id_idx = {}
     for idx, per_channel in enumerate(channels, 1):
         channel_id_idx[idx] = per_channel["channel_id"]
-        res_text += f'{idx}. {per_channel["channel_name"]}\n'
+        res_text += f"{idx}. {per_channel['channel_name']}\n"
     res_text += "请输入左侧序号\n中止操作请输入'取消'"
-    print(f"测试长度：{len(res_text)}")
     if len(res_text) > 300:
         image = await text_to_pic(res_text)
         await channel_manage_matcher.send(MessageSegment.image(image))
@@ -77,8 +82,12 @@ async def send_group_list(bot: Bot, event: GuildMessageEvent, state: T_State):
     state["channel_id_idx"] = channel_id_idx
 
 
-@channel_manage_matcher.got("channel_idx", MessageTemplate("{_prompt}"), [channel_handle_cancel])
-async def do_choose_channel_id(state: T_State, _: GuildMessageEvent, channel_idx: str = ArgPlainText()):
+@channel_manage_matcher.got(
+    "channel_idx", MessageTemplate("{_prompt}"), [channel_handle_cancel]
+)
+async def do_choose_channel_id(
+    state: T_State, _: GuildMessageEvent, channel_idx: str = ArgPlainText()
+):
     channel_id_idx: dict[int, int] = state["channel_id_idx"]
     assert channel_id_idx
     idx = int(channel_idx)
@@ -88,7 +97,11 @@ async def do_choose_channel_id(state: T_State, _: GuildMessageEvent, channel_idx
     state["target_user_info"] = channel_id
 
 
-@channel_manage_matcher.got("command", "请输入需要使用的命令：添加订阅，查询订阅，删除订阅，取消", [channel_handle_cancel])
+@channel_manage_matcher.got(
+    "command",
+    "请输入需要使用的命令：添加订阅，查询订阅，删除订阅，取消",
+    [channel_handle_cancel],
+)
 async def do_dispatch_command(
     bot: Bot,
     event: GuildMessageEvent,
