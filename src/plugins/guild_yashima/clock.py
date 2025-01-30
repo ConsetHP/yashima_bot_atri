@@ -20,13 +20,19 @@ from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_guild_patch import GuildMessageEvent
 
 from .db import ClockEventLog, ClockStatus
-from .utils.utils import get_config, at_user, get_sender_id_and_nickname
+from .utils.utils import (
+    get_config,
+    at_user,
+    get_sender_id_and_nickname,
+    get_role_id_named,
+    set_role,
+)
 from .send import send_msgs
 
 
 async def clock_help_handle(_: Matcher, event: GuildMessageEvent):
     msg = f"""しばらく中国語モードにスウィッチします、なにせ高性能ですから！
-自习打卡相关指令。每次自习最长时间为{get_config()['guild']['clock_overtime']}分钟，超时未结束将自动签退，需修正时间后才能开始新的自习。
+自习打卡相关指令。每次自习最长时间为{get_config()["guild"]["clock_overtime"]}分钟，超时未结束将自动签退，需修正时间后才能开始新的自习。
 @bot 自习帮助
 @bot 开始自习
 @bot 结束自习
@@ -84,10 +90,10 @@ async def clock_in_handle(_: Matcher, event: GuildMessageEvent):
     model.save()
     msg = at_user(event) + "已成功打卡，开始自习"
     await send_msgs(event.channel_id, msg)
-    # 修改用户组。藤子限制了身分组数量，没法加了，暂时注释掉
-    # role_id = await get_role_id_named(get_config()['guild']['clock_role_name'])
-    # if role_id:
-    #     await set_role(True, role_id, user_id)
+    # 修改用户组
+    role_id = await get_role_id_named(get_config()["guild"]["clock_role_name"])
+    if role_id:
+        await set_role(True, role_id, user_id)
 
 
 async def clock_out_handle(_: Matcher, event: GuildMessageEvent):
@@ -113,10 +119,10 @@ async def clock_out_handle(_: Matcher, event: GuildMessageEvent):
 
     msg = at_user(event) + f"已结束自习，本次自习时长{working_model.duration_desc()}"
     await send_msgs(event.channel_id, msg)
-    # 修改用户组，注释原因同clock_in_handle
-    # role_id = await get_role_id_named(get_config()['guild']['clock_role_name'])
-    # if role_id:
-    #     await set_role(False, role_id, event.get_user_id())
+    # 修改用户组
+    role_id = await get_role_id_named(get_config()["guild"]["clock_role_name"])
+    if role_id:
+        await set_role(False, role_id, event.get_user_id())
 
 
 async def clock_correct_time_handle(
