@@ -7,12 +7,15 @@ import asyncio
 from collections import deque
 from typing import Union
 
+from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.params import CommandArg
+from nonebot.matcher import Matcher
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11.exception import ActionFailed
 from nonebot.adapters import Message
 from nonebot.log import logger
 
-from .utils.utils import get_config, get_active_guild_id
+from .utils import get_config, get_active_guild_id
 
 QUEUE: deque[tuple[str, Message | str, int]] = deque()
 
@@ -79,3 +82,19 @@ async def send_msgs(channel_id: str | int, msg: Union[Message, str, list[Message
     else:
         await _send_msgs_dispatch(channel_id, msg)
     return
+
+
+async def test_sendable_msg_handle(
+    _: Matcher, event: GuildMessageEvent, args: Message = CommandArg()
+):
+    """测试特定消息是否能正常发送"""
+    msg = args.extract_plain_text()
+    if not msg:
+        await send_msgs(
+            event.channel_id, "コマンドの使い方：@bot 测试发送 <需要测试的消息>"
+        )
+        return
+    if len(msg) > 300:
+        await send_msgs(event.channel_id, "メッセージが長すぎます")
+        return
+    await send_msgs(event.channel_id, msg)

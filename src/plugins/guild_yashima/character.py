@@ -4,7 +4,7 @@ from nonebot.log import logger
 from nonebot_plugin_guild_patch import GuildMessageEvent
 from nonebot.matcher import Matcher
 
-from .utils.utils import at_user
+from .utils import at_user
 from .send import send_msgs
 
 
@@ -79,6 +79,6 @@ class Atri:
     async def ping_handle(_: Matcher, event: GuildMessageEvent):
         msg = (
             at_user(event)
-            + f"{Atri.general_word("robot_law")}、{Atri.general_word("rocket_punch")}"
+            + f"{Atri.general_word('robot_law')}、{Atri.general_word('rocket_punch')}"
         )
         await send_msgs(event.channel_id, msg)
