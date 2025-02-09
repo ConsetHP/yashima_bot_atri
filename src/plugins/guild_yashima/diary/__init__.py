@@ -6,6 +6,7 @@ require("nonebot_plugin_guild_patch")
 # 注册频道事件，移除本条 import 将导致事件响应器无法接收任何频道消息
 from nonebot_plugin_guild_patch import GuildMessageEvent as GuildMessageEvent  # noqa: E402
 
+from . import scheduler as scheduler  # noqa: E402
 from .record import save_guild_img_url_handle, save_recv_guild_msg_handle  # noqa: E402
 from .recover import resend_pc_unreadable_msg_handle, resend_system_recalled_img_handle  # noqa: E402
 
