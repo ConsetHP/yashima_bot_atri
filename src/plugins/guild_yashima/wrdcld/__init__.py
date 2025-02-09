@@ -16,6 +16,7 @@ require("nonebot_plugin_guild_patch")
 
 from nonebot_plugin_guild_patch import GuildMessageEvent  # noqa: E402
 
+from . import scheduler as scheduler  # noqa: E402
 from .db_operator import get_wordcloud_by_time  # noqa: E402
 from .analyzer import get_wordcloud_img  # noqa: E402
 from ..character import Atri  # noqa: E402
