@@ -21,8 +21,9 @@ async def mc_msg_handle(event: Union[BaseChatEvent, BaseDeathEvent]):
     timestamp = f"[{datetime.now().strftime('%H:%M:%S')}]"
 
     # 屏蔽假人死亡消息
-    if msg_text.startswith(CARPET_BOT_PREFIX) and isinstance(event, BaseDeathEvent):
-        return
+    for prefix in CARPET_BOT_PREFIX:
+        if msg_text.startswith(prefix) and isinstance(event, BaseDeathEvent):
+            return
 
     msg_result = (
         msg_text
