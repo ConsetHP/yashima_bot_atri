@@ -23,6 +23,7 @@ from . import (  # noqa: E402
     wrdcld,
     clock,
     send,
+    guild_plan,
 )
 from .send import test_sendable_msg_handle  # noqa: E402
 from .database.db_init import init_database  # noqa: E402
@@ -87,7 +88,7 @@ __all__ = [
     "minecraft",
     "database",
     "clock",
-    "minecraft_msg",
+    "guild_plan",
     "send",
     "utils",
 ]

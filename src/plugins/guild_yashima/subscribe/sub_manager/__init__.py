@@ -98,7 +98,7 @@ async def do_choose_channel_id(
     if idx not in channel_id_idx.keys():
         await channel_manage_matcher.reject("请输入正确序号")
     channel_id = channel_id_idx[idx]
-    state["target_user_info"] = channel_id
+    state["target_channel_id"] = channel_id
 
 
 @channel_manage_matcher.got(
@@ -145,14 +145,10 @@ async def do_dispatch_command(
 
 
 __all__ = [
-    "add_cookie_matcher",
-    "add_cookie_target_matcher",
     "add_sub_matcher",
     "common_platform",
-    "del_cookie_matcher",
-    "del_cookie_target_matcher",
     "del_sub_matcher",
-    "group_manage_matcher",
+    "channel_manage_matcher",
     "no_permission_matcher",
     "query_sub_matcher",
 ]
