@@ -16,6 +16,7 @@ from nonebot.adapters import Message
 from nonebot.log import logger
 
 from .utils import get_config, get_active_guild_id
+from .http import bypass_tencent_url_detection
 
 QUEUE: deque[tuple[str, Message | str, int]] = deque()
 
@@ -64,6 +65,7 @@ async def do_send_msgs():
 
 
 async def _send_msgs_dispatch(channel_id: str, msg: Message | str):
+    msg = bypass_tencent_url_detection(msg)
     QUEUE.append((channel_id, msg, MESSAGE_SEND_RETRY))
     # 队列长度在 append 前是 0
     if len(QUEUE) == 1:
