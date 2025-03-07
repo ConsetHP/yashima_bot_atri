@@ -25,7 +25,7 @@ def parse_tencent_link_card(json_data: str) -> tuple[str, str] | None:
         view = get_json("$.view")
         link = get_json(f"$.meta.{view}.jumpUrl")
         title = get_json(f"$.meta.{view}.title")
-    elif app == "com.tencent.tuwen.lua":
+    elif app in ["com.tencent.tuwen.lua", "com.tencent.music.lua"]:
         view = get_json("$.view")
         link = get_json(f"$.meta.{view}.jumpUrl")
         title = get_json(f"$.meta.{view}.title")
