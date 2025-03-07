@@ -2,6 +2,8 @@ import random
 
 from nonebot.log import logger
 from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.adapters.qq import MessageCreateEvent
+from nonebot.adapters.qq import MessageSegment as QQMessageSegment
 from nonebot.matcher import Matcher
 
 from .utils import at_user
@@ -76,9 +78,17 @@ class Atri:
             return ""
 
     @staticmethod
-    async def ping_handle(_: Matcher, event: GuildMessageEvent):
+    async def cqhttp_ping_handle(_: Matcher, event: GuildMessageEvent):
         msg = (
             at_user(event)
             + f"{Atri.general_word('robot_law')}、{Atri.general_word('rocket_punch')}"
         )
         await send_msgs(event.channel_id, msg)
+
+    @staticmethod
+    async def qq_ping_handle(matcher: Matcher, event: MessageCreateEvent):
+        msg = (
+            QQMessageSegment.mention_user(event.get_user_id())
+            + f"{Atri.general_word('robot_law')}、{Atri.general_word('rocket_punch')}"
+        )
+        await matcher.finish(msg)

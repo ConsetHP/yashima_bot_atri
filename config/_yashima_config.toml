@@ -2,6 +2,7 @@
 bot_id = "114514"  # 机器人 QQ 号
 send_failure_retry = 5  # 消息发送失败重试次数
 send_interval = 1.5  # 消息发送间隔
+domain_white_list = ["domain1.com", "domain2.com"]
 
 [auth]
 admin = [""] # 管理员ID
@@ -43,6 +44,9 @@ blacklist_mc_message = []  # MC消息词语黑名单
 text_to_image = false  # 发送消息时将文本转换成图片（没啥用，因为频道里的图片也会被吞）
 browser_render_theme = true  # 是否使用环境中的浏览器渲染主题
 platform_theme = {"weibo" = "ht2i"}  # 为特定平台指定渲染主题（尽量不用basic主题，文字内容太长会被风控）
+
+[forum]
+default_channel_name = "abc"  # /一键发帖 默认发送的帖子区名称
 
 [debug]
 test_channel = ""  # 测试用的频道ID

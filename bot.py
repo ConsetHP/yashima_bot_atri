@@ -2,6 +2,7 @@ import nonebot
 from nonebot.log import logger, default_format
 from nonebot.adapters.onebot.v11 import Adapter as OnebotAdapter
 from nonebot.adapters.minecraft import Adapter as MinecraftAdapter
+from nonebot.adapters.qq import Adapter as QQAdapter
 
 
 nonebot.init()
@@ -9,9 +10,12 @@ nonebot.init()
 driver = nonebot.get_driver()
 driver.register_adapter(OnebotAdapter)
 driver.register_adapter(MinecraftAdapter)
+driver.register_adapter(QQAdapter)
 
 if driver.config.is_log_file:
-    logger.add("logs/bot_{time}.log", level="INFO", format=default_format, rotation="1 week")
+    logger.add(
+        "logs/bot_{time}.log", level="INFO", format=default_format, rotation="1 week"
+    )
 else:
     print("不输出日志文件")
 

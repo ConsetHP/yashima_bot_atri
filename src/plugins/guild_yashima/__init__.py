@@ -24,6 +24,7 @@ from . import (  # noqa: E402
     clock,
     send,
     guild_plan,
+    forum,
 )
 from .send import test_sendable_msg_handle  # noqa: E402
 from .database.db_init import init_database  # noqa: E402
@@ -59,7 +60,7 @@ atri_rocket_fists = on_keyword(
         "ロボっ子",
     },
     rule=(to_me()),
-    handlers=[Atri.ping_handle],
+    handlers=[Atri.qq_ping_handle, Atri.cqhttp_ping_handle],
 )
 
 # 测试 URL 发送相关
@@ -91,4 +92,5 @@ __all__ = [
     "guild_plan",
     "send",
     "utils",
+    "forum",
 ]

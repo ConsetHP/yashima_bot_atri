@@ -10,30 +10,11 @@ from PIL.Image import Image as PILImage
 from yarl import URL
 
 from ...utils import get_config
-
-
-async def pic_url_to_image(data: str | bytes, http_client: AsyncClient) -> PILImage:
-    pic_buffer = BytesIO()
-    if isinstance(data, str):
-        res = await http_client.get(data)
-        pic_buffer.write(res.content)
-    else:
-        pic_buffer.write(data)
-    return Image.open(pic_buffer)
+from ...image import crop_image_to_square, pic_url_to_image
 
 
 def _check_image_square(size: tuple[int, int]) -> bool:
     return abs(size[0] - size[1]) / size[0] < 0.05
-
-
-def _crop_image_to_square(img: PILImage) -> PILImage:
-    width, height = img.size
-    edge_length = min(width, height)
-    left = (width - edge_length) / 2
-    top = (height - edge_length) / 2
-    right = (width + edge_length) / 2
-    bottom = (height + edge_length) / 2
-    return img.crop((left, top, right, bottom))
 
 
 async def pic_merge(
@@ -46,13 +27,13 @@ async def pic_merge(
 
     first_image = await _pic_url_to_image(pics[0])
     if not _check_image_square(first_image.size):
-        first_image = _crop_image_to_square(first_image)
+        first_image = crop_image_to_square(first_image)
     images: list[PILImage] = [first_image]
     # first row
     for i in range(1, 3):
         cur_img = await _pic_url_to_image(pics[i])
         if not _check_image_square(cur_img.size):
-            cur_img = _crop_image_to_square(cur_img)
+            cur_img = crop_image_to_square(cur_img)
         if cur_img.size[1] != images[0].size[1]:  # height not equal
             cur_img = cur_img.resize(images[0].size)
         images.append(cur_img)
@@ -68,14 +49,14 @@ async def pic_merge(
             return False
         row_first_img = await _pic_url_to_image(pics[row * 3])
         if not _check_image_square(row_first_img.size):
-            row_first_img = _crop_image_to_square(row_first_img)
+            row_first_img = crop_image_to_square(row_first_img)
         if row_first_img.size[0] != images[0].size[0]:
             row_first_img = row_first_img.resize(images[0].size)
         image_row: list[PILImage] = [row_first_img]
         for i in range(row * 3 + 1, row * 3 + 3):
             cur_img = await _pic_url_to_image(pics[i])
             if not _check_image_square(cur_img.size):
-                cur_img = _crop_image_to_square(cur_img)
+                cur_img = crop_image_to_square(cur_img)
             if cur_img.size[1] != row_first_img.size[1]:
                 cur_img = cur_img.resize(row_first_img.size)
             if cur_img.size[0] != images[i % 3].size[0]:

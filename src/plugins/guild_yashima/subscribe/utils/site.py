@@ -5,7 +5,7 @@ from httpx import AsyncClient
 
 from ..types import Target
 
-from .http import http_client
+from ...http import http_client
 
 
 class ClientManager(ABC):

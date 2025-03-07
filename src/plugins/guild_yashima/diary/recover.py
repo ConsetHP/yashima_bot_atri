@@ -7,9 +7,10 @@ from nonebot_plugin_guild_patch import GuildMessageEvent
 from nonebot.params import EventMessage
 from nonebot.matcher import Matcher
 
+from .image import build_preview_image
 from .db_model import GuildImgRecord
 from .utils import parse_tencent_link_card
-from ..utils import process_url
+from ..http import process_url
 from ..character import Atri
 from ..send import send_msgs
 
@@ -66,21 +67,25 @@ async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent
 
     if query:
         to_send: list[Message] = []
+        img_url = Message(MessageSegment.text(f"{query.content}"))
         head_banner = Message(
             MessageSegment.text("◤◢◤◢◤◢◤◢◤◢◤◢\n🈲  banned by tencent 🈲\n◤◢◤◢◤◢◤◢◤◢◤◢")
         )
+        preview_msg = Message(
+            MessageSegment.text("🏞️ 画像のプレヴュー")
+            + MessageSegment.image(await build_preview_image(str(query.content)))
+        )
         hint_msg = Message(
             MessageSegment.text(
-                "🏞️🔗 画像のURLはこちらです：\n（如果出现'已停止访问该网页'，请手动复制 URL 到正规浏览器中打开）"
+                "🔗 画像のURLはこちらです：\n（如果出现'已停止访问该网页'，请手动复制 URL 到正规浏览器中打开）"
             )
         )
-        img_url = Message(MessageSegment.text(f"{query.content}"))
         foot_banner = Message(
             MessageSegment.text(
                 f"◤◢◤◢◤◢◤◢◤◢◤◢\n🍀tap URL above to see🍀\n◤◢◤◢◤◢◤◢◤◢◤◢\n{Atri.general_word('modal_particle')}、{Atri.general_word('proud')}"
             )
         )
-        to_send.extend([head_banner, hint_msg, img_url, foot_banner])
+        to_send.extend([head_banner, preview_msg, hint_msg, img_url, foot_banner])
         await send_msgs(event.channel_id, to_send)
     else:
         to_send = f"{Atri.general_word('loading')}。データが見つかりません"

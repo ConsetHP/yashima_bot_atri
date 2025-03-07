@@ -11,11 +11,10 @@ from nonebot.adapters.onebot.v11 import MessageSegment
 from ...utils import get_config
 
 from .context import ProcessContext as ProcessContext
-from .http import http_client as http_client
+from ...http import http_client as http_client
 from .image import capture_html as capture_html
 from .image import is_pics_mergable as is_pics_mergable
 from .image import pic_merge as pic_merge
-from .image import pic_url_to_image as pic_url_to_image
 from .image import text_to_image as text_to_image
 from .site import ClientManager as ClientManager
 from .site import DefaultClientManager as DefaultClientManager
