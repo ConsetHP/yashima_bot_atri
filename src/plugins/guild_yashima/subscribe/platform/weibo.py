@@ -12,9 +12,9 @@ from yarl import URL
 
 from ..post import Post
 from ..types import ApiError, Category, RawPost, Tag, Target
-from ..utils import http_client
+from ...http import http_client
 from ..utils.site import Site, DefaultClientManager
-from ...utils import process_url
+from ...http import process_url
 
 from .platform import NewMessage
 
