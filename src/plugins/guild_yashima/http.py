@@ -80,19 +80,24 @@ def process_url(url: str) -> str:
 
 def replace_url_dots(text: str) -> str:
     """替换URL中的点"""
-    domain_white_list: list[str] = get_config["general"]["domain_white_list"]
+    domain_white_list: list[str] = get_config()["general"]["domain_white_list"]
     domain_pattern = re.compile(r"([0-9a-zA-Z-]{1,}\.)+([a-zA-Z]{2,})")
+    url_pattern = re.compile(
+        r"https?://[a-zA-Z0-9\-._~:/?#\[\]@!$&\'()*+,;=%]+|www\.[a-zA-Z0-9\-._~:/?#\[\]@!$&\'()*+,;=%]+"
+    )
 
-    # 排除白名单
+    # 排除域名白名单
     if match := domain_pattern.search(text):
         domain: str = match.group(0)
         if domain in domain_white_list:
             return text
 
     def replace_dots(match: Match):
-        domain: str = match.group(0)
-        if domain.startswith("www"):
-            domain = domain.replace("www", "わｘ３")
-        return domain.replace(".", "。")
+        url: str = match.group(0)
+        if url.startswith("www"):
+            url = url.replace("www", "わｘ３")
+        url = url.replace("/", "㈥")
+        url = url.replace("http", "ひととぴ")
+        return url.replace(".", "。")
 
-    return domain_pattern.sub(replace_dots, text.replace("http", "ひととぴ"))
+    return url_pattern.sub(replace_dots, text)
