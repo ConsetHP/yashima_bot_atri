@@ -8,6 +8,7 @@ from ..subscribe.database.model import (
     Subscribe,
 )
 from ..clock.db_model import ClockEventLog
+from ..forum.db_model import ThreadUser, ThreadInfo, Thread
 
 
 def init_database(db_path: str):
@@ -36,5 +37,8 @@ def init_database(db_path: str):
             GuildSubscribedChannel,
             SubscribeTarget,
             Subscribe,
+            ThreadUser,
+            ThreadInfo,
+            Thread,
         ]
     )

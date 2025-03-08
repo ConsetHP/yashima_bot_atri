@@ -1,5 +1,6 @@
 [general]
 bot_id = "114514"  # 机器人 QQ 号
+official_bot_id = "114514233"  # 官方API的bot的user_id，不是.env配置文件中的ID，需要单独获取
 send_failure_retry = 5  # 消息发送失败重试次数
 send_interval = 1.5  # 消息发送间隔
 domain_white_list = ["domain1.com", "domain2.com"]

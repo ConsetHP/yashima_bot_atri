@@ -13,8 +13,10 @@ from nonebot.adapters.qq import (
     MessageSegment,
     ForumPostCreateEvent,
     ForumReplyCreateEvent,
+    ForumThreadUpdateEvent,
     ActionFailed,
 )
+from nonebot.adapters.qq.models import RichText
 from nonebot.typing import T_State
 
 from .utils import (
@@ -27,7 +29,9 @@ from .utils import (
     markdown_to_html,
     replace_qq_emoji,
     get_thread_channels,
+    is_bot_thread,
 )
+from .db_operater import database, UserNotFoundError
 from ..utils import get_config
 
 
@@ -37,9 +41,10 @@ forum_event_matcher = on_notice(
     rule=is_type(Union[ForumPostCreateEvent, ForumReplyCreateEvent])
 )
 message_event_matcher = on_message(rule=is_type(MessageCreateEvent))
+forum_record_matcher = on_notice(rule=is_type(ForumThreadUpdateEvent) & is_bot_thread)
 forum_help_matcher = on_command("帮助", rule=to_me())
 forum_delete_matcher = on_command("撤回发帖", rule=to_me())
-database_delete_matcher = on_command("清空帖子数据库", rule=to_me())
+database_clear_matcher = on_command("清空帖子数据库", rule=to_me())
 
 channel_handle_cancel = gen_handle_cancel(forum_send_matcher, "🆗 已取消")
 
@@ -79,6 +84,72 @@ async def receive_forum(
     except ActionFailed as af:
         logger.warning(f"无法获取昵称：{af}，用户id：{event.author_id}")
     logger.warning(f"用户昵称：{nick_name}")
+
+
+@database_clear_matcher.handle()
+async def are_you_sure(_: MessageCreateEvent, state: T_State):
+    state["_prompt"] = (
+        "◤◢◤◢◤◢◤◢◤◢◤◢\n即将清空所有的帖子记录！！\n◤◢◤◢◤◢◤◢◤◢◤◢\n📝 请输入'I AM CERTAIN WHAT IM DOING'确认清空 | 其他内容则清空取消"
+    )
+
+
+@database_clear_matcher.got("confirm", MessageTemplate("{_prompt}"))
+async def clear_forum_database(_: MessageCreateEvent, confirm: str = ArgPlainText()):
+    if confirm == "I AM CERTAIN WHAT IM DOING":
+        logger.info("开始清空数据库")
+        database.clear_db()
+    else:
+        await database_clear_matcher.finish("🆗 已取消")
+
+
+@forum_record_matcher.handle()
+async def record_thread(event: ForumThreadUpdateEvent):
+    thread_id: str = [
+        per_info[1] for per_info in event.thread_info if per_info[0] == "thread_id"
+    ][0]
+    raw_thread_title: RichText = [
+        per_info[1] for per_info in event.thread_info if per_info[0] == "title"
+    ][0]
+    title = raw_thread_title.paragraphs[0].elems[0].text.text
+    database.add_thread(channel_id=event.channel_id, thread_id=thread_id, title=title)
+
+
+@forum_delete_matcher.handle()
+async def prepare_confirm(event: MessageCreateEvent, state: T_State):
+    try:
+        thread = database.get_last_thread(event.get_user_id())
+    except UserNotFoundError:
+        await forum_delete_matcher.finish(
+            "❌ 帖子记录不存在，仅可撤回自己使用'/一键发帖'发送的帖子"
+        )
+    except Exception as ex:
+        logger.warning(ex)
+        await forum_delete_matcher.finish("🆖 出错了，请联系bot管理员")
+    else:
+        state["thread_channel_id"] = str(thread.thread_channel_id)
+        state["thread_id"] = thread.thread_id
+        state["_prompt"] = (
+            f"🚨 即将撤回帖子【{thread.title}】\n✨ 如果需要撤回更早的帖子，请联系管理手动处理\n📝 输入'确认'确认撤回 | 其他内容取消撤回"
+        )
+
+
+@forum_delete_matcher.got("confirm", MessageTemplate("{_prompt}"))
+async def got_confirm(
+    bot: Bot, event: MessageCreateEvent, state: T_State, confirm: str = ArgPlainText()
+):
+    if confirm == "确认":
+        try:
+            database.del_last_thread(event.get_user_id())
+            await bot.delete_thread(
+                channel_id=state["thread_channel_id"], thread_id=state["thread_id"]
+            )
+        except Exception as ex:
+            logger.warning(ex)
+            await forum_event_matcher.finish("🆖 出错了，请联系bot管理员")
+        else:
+            await forum_event_matcher.finish("🆗 成功撤回")
+    else:
+        forum_delete_matcher.finish("🆗 已取消")
 
 
 @forum_help_matcher.handle()
@@ -220,6 +291,7 @@ async def got_upload_content(
     #   source_user_id = state["source_user_id"]
 
     # 拼接回复文本和源文本
+    # 有回复
     if state["has_reply"]:
         source_text = f"{state['upload_content']}" if state["upload_content"] else ""
         # 发送了参数
@@ -228,19 +300,25 @@ async def got_upload_content(
                 " ".join(upload_content) + "\n\n" if upload_content[0] else ""
             )  # 此时 upload_content 中应只有一个元素
             reply_text += "转发消息：\n"
-        # 只是回复了消息
+        # 无参数
         else:
             reply_text = "转发消息：\n"
         state["upload_content"] = reply_text + source_text
         state["title"] = generate_thread_title(
             reply_text if upload_content else source_text
         )
+    # 没有回复
     else:
         state["upload_content"] = " ".join(upload_content)
         state["image_urls"] = get_event_img(event) if get_event_img(event) else None
-        state["title"] = generate_thread_title(
-            upload_content[0] if upload_content else "分享图片"
-        )
+        # 有参数
+        if upload_content:
+            state["title"] = generate_thread_title(
+                upload_content[0] if upload_content[0] else "分享图片"
+            )
+        # 无参数
+        else:
+            state["title"] = "分享图片"
 
 
 @forum_send_matcher.handle()
@@ -263,18 +341,27 @@ async def send_thread(bot: Bot, state: T_State, event: MessageCreateEvent):
             img_w, img_h = await get_img_size(per_url)
             md_content += f"![图片 #{img_w}px #{img_h}px]({per_url})\n"
 
+    request_id = database.get_request_id()
     try:
         logger.info(f"标题：{state['title']}，投稿内容：{md_content}")
         await bot.put_thread(
             channel_id=state["target_channel_id"],
-            title=state["title"],
+            title=f"[{str(request_id).zfill(3)}]{state['title']}",
             content=markdown_to_html(md_content),
             format=2,  # HTML 格式，可更自由地换行
         )
     except Exception as ex:
         logger.warning(f"发帖失败：{ex}")
-        await forum_send_matcher.finish("🆖 帖子发送失败，请联系bot管理员")
-    await forum_send_matcher.finish(
-        MessageSegment.text("🆗 帖子成功发送至")
-        + MessageSegment.mention_channel(state["target_channel_id"])
+        await forum_send_matcher.send("🆖 帖子发送失败，请联系bot管理员")
+    else:
+        await forum_send_matcher.send(
+            MessageSegment.text("🆗 帖子成功发送至")
+            + MessageSegment.mention_channel(state["target_channel_id"])
+        )
+    database.record_thread_content(
+        user_id=event.get_user_id(),
+        channel_id=int(event.channel_id),
+        request_id=request_id,
+        text=f"{md_content[:300]}..." if len(md_content) > 300 else md_content,
     )
+    await forum_send_matcher.finish()

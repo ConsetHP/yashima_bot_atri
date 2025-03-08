@@ -9,6 +9,7 @@ from nonebot.params import Depends, EventPlainText
 from nonebot.adapters.qq import (
     MessageCreateEvent,
     ForumPostCreateEvent,
+    ForumThreadUpdateEvent,
     Bot,
     ActionFailed,
 )
@@ -16,6 +17,7 @@ from nonebot.adapters.qq.models import ChannelType, Channel
 
 from ..http import http_client
 from ..image import pic_url_to_image
+from ..utils import get_config
 
 
 def gen_handle_cancel(matcher: type[Matcher], message: str):
@@ -135,3 +137,7 @@ def number_escape(raw_num: str) -> str:
 def replace_qq_emoji(text: str) -> str:
     """替换文本中的qq表情"""
     return re.sub(r"<emoji:\d+>", "[表情]", text)
+
+
+def is_bot_thread(event: ForumThreadUpdateEvent) -> bool:
+    return event.author_id == get_config()["general"]["official_bot_id"]
