@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 import nonebot
@@ -31,8 +32,11 @@ from .utils import (
     get_thread_channels,
     is_bot_thread,
 )
-from .db_operater import database, UserNotFoundError
+from .db_operator import database, UserNotFoundError
 from ..utils import get_config
+
+
+record_lock = asyncio.Lock()
 
 
 # 指令用法：/一键发帖 <帖子区名称> <投稿内容> <是否提醒帖子评论 默认："是">
@@ -98,12 +102,18 @@ async def clear_forum_database(_: MessageCreateEvent, confirm: str = ArgPlainTex
     if confirm == "I AM CERTAIN WHAT IM DOING":
         logger.info("开始清空数据库")
         database.clear_db()
+        await database_clear_matcher.finish("🆗 清空成功")
     else:
         await database_clear_matcher.finish("🆗 已取消")
 
 
 @forum_record_matcher.handle()
 async def record_thread(event: ForumThreadUpdateEvent):
+    """记录帖子id，关联用户和帖子"""
+    # record_thread_content 必须在 record_thread 之前执行
+    async with record_lock:
+        pass
+    logger.info("收到bot的帖子事件。开始关联用户与帖子")
     thread_id: str = [
         per_info[1] for per_info in event.thread_info if per_info[0] == "thread_id"
     ][0]
@@ -137,7 +147,7 @@ async def prepare_confirm(event: MessageCreateEvent, state: T_State):
 async def got_confirm(
     bot: Bot, event: MessageCreateEvent, state: T_State, confirm: str = ArgPlainText()
 ):
-    if confirm == "确认":
+    if confirm in ["确认", "确认撤回"]:
         try:
             database.del_last_thread(event.get_user_id())
             await bot.delete_thread(
@@ -149,7 +159,7 @@ async def got_confirm(
         else:
             await forum_event_matcher.finish("🆗 成功撤回")
     else:
-        forum_delete_matcher.finish("🆗 已取消")
+        await forum_delete_matcher.finish("🆗 已取消")
 
 
 @forum_help_matcher.handle()
@@ -172,6 +182,21 @@ async def send_help(matcher: Matcher, _: MessageCreateEvent):
 
 📃 参数说明：
     帖子区完整名称：可选，默认为 {DEFAULT_CHANNEL_NAME}（若帖子区中不存在{DEFAULT_CHANNEL_NAME}区则必须指定）
+
+✨ /撤回发帖
+
+🛠️ 用法：
+    直接输入 '@bot /撤回发帖'，可以撤回最后一次使用'/一键发帖'发送的帖子
+
+✨ /萝卜子
+
+🛠️ 用法：
+    直接输入 '@bot /萝卜子'，可以吃到火箭拳
+
+✨ /清空帖子数据库
+
+🛠️ 用法：
+    直接输入 '@bot /清空帖子数据库'（仅管理员），在出现严重 bug （比如重复发帖）时联系bot管理员使用
 """
     await matcher.finish(prompt)
 
@@ -344,12 +369,23 @@ async def send_thread(bot: Bot, state: T_State, event: MessageCreateEvent):
     request_id = database.get_request_id()
     try:
         logger.info(f"标题：{state['title']}，投稿内容：{md_content}")
+        # 直接使用 await bot.put_thread 可能会导致 record_thread 先执行，导致无法将用户与帖子绑定
         await bot.put_thread(
             channel_id=state["target_channel_id"],
             title=f"[{str(request_id).zfill(3)}]{state['title']}",
             content=markdown_to_html(md_content),
             format=2,  # HTML 格式，可更自由地换行
         )
+
+        # record_thread_content 必须在 record_thread 之前执行
+        async with record_lock:
+            logger.info("开始记录帖子内容")
+            database.record_thread_content(
+                user_id=event.get_user_id(),
+                channel_id=int(event.channel_id),
+                request_id=request_id,
+                text=f"{md_content[:300]}..." if len(md_content) > 300 else md_content,
+            )
     except Exception as ex:
         logger.warning(f"发帖失败：{ex}")
         await forum_send_matcher.send("🆖 帖子发送失败，请联系bot管理员")
@@ -358,10 +394,5 @@ async def send_thread(bot: Bot, state: T_State, event: MessageCreateEvent):
             MessageSegment.text("🆗 帖子成功发送至")
             + MessageSegment.mention_channel(state["target_channel_id"])
         )
-    database.record_thread_content(
-        user_id=event.get_user_id(),
-        channel_id=int(event.channel_id),
-        request_id=request_id,
-        text=f"{md_content[:300]}..." if len(md_content) > 300 else md_content,
-    )
+
     await forum_send_matcher.finish()
