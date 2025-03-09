@@ -73,7 +73,9 @@ class DBOperator:
             )
             db_thread.save()
         else:
-            raise AddThreadError
+            raise AddThreadError(
+                f"关联帖子错误，info：{info_query}，user：{user_query}"
+            )
 
     @db.atomic()
     def del_last_thread(self, user_id: str) -> None:
@@ -94,7 +96,7 @@ class DBOperator:
             else:
                 raise InfoNotFoundError(f"无法找到用户：{user_id}的 ThreadInfo 记录")
         else:
-            raise ThreadNotFoundError
+            raise UserNotFoundError(f"用户记录：{user_id}不存在")
 
     @db.atomic()
     def del_thread(self, channel_id: int, thread_id: str) -> None:
@@ -141,7 +143,7 @@ class DBOperator:
             if thread_query:
                 return thread_query
             else:
-                raise ThreadNotFoundError
+                raise ThreadNotFoundError(f"无法找到用户：{user_id}的 ThreadInfo 记录")
         else:
             raise UserNotFoundError(f"数据库中没有用户：{user_id}的记录")
 
