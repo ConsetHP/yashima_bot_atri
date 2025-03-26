@@ -94,10 +94,9 @@ def replace_url_dots(text: str) -> str:
 
     def replace_dots(match: Match):
         url: str = match.group(0)
-        if url.startswith("www"):
-            url = url.replace("www", "わｘ３")
-        url = url.replace("/", "㈥")
-        url = url.replace("http", "ひととぴ")
-        return url.replace(".", "。")
+        url = url.replace("https://", "")
+        url = url.replace("http://", "")
+        url = url.replace("/", "／")
+        return url.replace(".", "·")
 
     return url_pattern.sub(replace_dots, text)
