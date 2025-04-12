@@ -1,11 +1,9 @@
 import re
 from markdown import markdown
-from typing import Annotated, Union
+from typing import Union
 
 from PIL.Image import Image as PILImage
 from nonebot.log import logger
-from nonebot.matcher import Matcher
-from nonebot.params import Depends, EventPlainText
 from nonebot.adapters.qq import (
     MessageCreateEvent,
     ForumPostCreateEvent,
@@ -20,14 +18,6 @@ from ..image import pic_url_to_image
 from ..utils import get_config
 
 
-def gen_handle_cancel(matcher: type[Matcher], message: str):
-    async def _handle_cancel(text: Annotated[str, EventPlainText()]):
-        if text == "取消":
-            await matcher.finish(message)
-
-    return Depends(_handle_cancel)
-
-
 def get_event_img(event: MessageCreateEvent) -> list[str] | None:
     if msg := event.get_message():
         return [
@@ -37,17 +27,6 @@ def get_event_img(event: MessageCreateEvent) -> list[str] | None:
         ]
     else:
         return None
-
-
-def generate_thread_title(text: str) -> str:
-    """根据投稿内容生成帖子标题"""
-    match = re.search(r"^(.*?)\n", text)
-
-    if match:
-        text = match.group(1)
-        return f"{text[:15]}..." if len(text) > 15 else text
-    else:
-        return f"{text[:15]}..." if len(text) > 15 else text
 
 
 async def get_user_nick(

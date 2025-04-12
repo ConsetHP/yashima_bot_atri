@@ -29,7 +29,7 @@ from . import (  # noqa: E402
 from .send import test_sendable_msg_handle  # noqa: E402
 from .database.db_init import init_database  # noqa: E402
 from .utils import get_config, is_admin_user, reload_config, at_user  # noqa: E402
-from .character import Atri  # noqa: E402
+from .character import atri  # noqa: E402
 from .subscribe.scheduler.manager import init_scheduler  # noqa: E402
 
 # 数据库初始化
@@ -40,10 +40,6 @@ get_driver().on_startup(init_scheduler)
 
 reload_config_matcher = on_fullmatch("重载配置", rule=to_me(), permission=is_admin_user)
 
-# 协议适配器的日志里可以看见用户的ID，尽量别用这个指令
-my_id_matcher = on_fullmatch(
-    "我的ID", ignorecase=True, rule=to_me(), permission=is_admin_user
-)
 
 # 萝卜子火箭拳相关
 atri_rocket_fists = on_keyword(
@@ -60,7 +56,7 @@ atri_rocket_fists = on_keyword(
         "ロボっ子",
     },
     rule=(to_me()),
-    handlers=[Atri.qq_ping_handle, Atri.cqhttp_ping_handle],
+    handlers=[atri.qq_ping_handle, atri.cqhttp_ping_handle],
 )
 
 # 测试 URL 发送相关
@@ -72,14 +68,7 @@ test_sendable_msg = on_command(
 @reload_config_matcher.handle()
 async def _(event: GuildMessageEvent):
     reload_config()
-    await reload_config_matcher.send(at_user(event) + "コンフィグがリロードされました")
-
-
-@my_id_matcher.handle()
-async def _(event: GuildMessageEvent):
-    await my_id_matcher.send(
-        at_user(event) + f"あなたのギルドユーザーIDは：{event.user_id}です"
-    )
+    await reload_config_matcher.send(at_user(event) + "コンフィグがリロード完了です")
 
 
 __all__ = [

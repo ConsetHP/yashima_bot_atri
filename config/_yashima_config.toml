@@ -19,7 +19,7 @@ clock_role_name = "自习中" # 打卡用户组名
 clock_overtime = 200 # 打卡自动签退时长，分钟
 
 [wordcloud]
-theme = "ave_mujica"  # 词云主题，留空不使用主题
+theme = "ave_mujica"  # 词云主题，可选：ave_mujica，classic
 stopwords_path = "config/stopwords.txt"
 font_path = "config/PingFangSC-Semibold.otf"  # 默认字体
 options = {}

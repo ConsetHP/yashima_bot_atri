@@ -22,12 +22,16 @@ async def pic_merge(
 ) -> list[str | bytes]:
     if len(pics) < 3:
         return pics
+    elif len(pics) > 9:
+        pics = [pics[i] for i in range(9)]  # 图片太多容易内存溢出
 
     _pic_url_to_image = partial(pic_url_to_image, http_client=http_client)
 
     first_image = await _pic_url_to_image(pics[0])
     if not _check_image_square(first_image.size):
         first_image = crop_image_to_square(first_image)
+    if first_image.size[0] > 236:
+        first_image = first_image.resize((236, 236))  # 分辨率太高容易内存溢出
     images: list[PILImage] = [first_image]
     # first row
     for i in range(1, 3):

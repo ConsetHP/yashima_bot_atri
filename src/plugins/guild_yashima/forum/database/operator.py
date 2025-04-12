@@ -7,16 +7,15 @@ from peewee import (
 )
 from nonebot.log import logger
 
-from .db_model import (
+from .model import (
     ThreadUser,
     ThreadInfo,
     Thread,
     ThreadNotFoundError,
-    InfoNotFoundError,
     UserNotFoundError,
     AddThreadError,
 )
-from ..database.db_init import db
+from ...database.db_init import db
 
 
 class DBOperator:
@@ -62,7 +61,12 @@ class DBOperator:
             .order_by(ThreadInfo.recv_time.desc())
             .first()
         )
-        user_query = ThreadUser.get_or_none(ThreadUser.last_request_id == request_id)
+        user_query = (
+            ThreadUser.select()
+            .where(ThreadUser.last_request_id == request_id)
+            .order_by(ThreadUser.last_request_time.desc())
+            .first()
+        )
         if info_query and user_query:
             db_thread = Thread(
                 title=title,
@@ -94,7 +98,7 @@ class DBOperator:
                 info_query.delete_instance()
                 self._del_user_if_no_thread(user_query)
             else:
-                raise InfoNotFoundError(f"无法找到用户：{user_id}的 ThreadInfo 记录")
+                raise ThreadNotFoundError(f"无法找到用户：{user_id}的 ThreadInfo 记录")
         else:
             raise UserNotFoundError(f"用户记录：{user_id}不存在")
 
@@ -119,7 +123,7 @@ class DBOperator:
         if thread_count == 0:
             user.delete_instance()
 
-    def get_thread(self, channel_id: int, thread_id: str) -> Thread | None:
+    def get_thread(self, channel_id: int, thread_id: str) -> Optional[Thread]:
         """获取指定帖子"""
         return Thread.get_or_none(
             (Thread.thread_channel_id == channel_id) & (Thread.thread_id == thread_id)
@@ -127,11 +131,11 @@ class DBOperator:
 
     def get_last_thread(self, user_id: str) -> Thread:
         """获取用户发送的最后一次帖子"""
-        user_query: ThreadUser | None = ThreadUser.get_or_none(
+        user_query: Optional[ThreadUser] = ThreadUser.get_or_none(
             ThreadUser.user_id == user_id
         )
         if user_query:
-            thread_query: Thread | None = (
+            thread_query: Optional[Thread] = (
                 Thread.select(Thread, ThreadUser, ThreadInfo)
                 .join(ThreadUser, on=(Thread.user == ThreadUser.id))
                 .where(Thread.user == user_query)
@@ -147,6 +151,17 @@ class DBOperator:
         else:
             raise UserNotFoundError(f"数据库中没有用户：{user_id}的记录")
 
+    def thread_is_just_sent(self, user_id: str) -> Optional[bool]:
+        """用户是否刚刚投稿帖子"""
+        query: ThreadUser = ThreadUser.get_or_none(ThreadUser.user_id == user_id)
+        if query:
+            previous_time: datetime = datetime.now()
+            request_time: datetime = query.last_request_time
+            time_delta = previous_time - request_time
+            return True if time_delta < timedelta(minutes=5) else False
+        else:
+            raise UserNotFoundError(f"数据库中没有用户：{user_id}的记录")
+
     # 必须在用户会话的最后获取，否则有概率出现用户与帖子绑定混乱的情况
     def get_request_id(self) -> int:
         """获取当前请求id"""
@@ -154,13 +169,13 @@ class DBOperator:
             ThreadUser.select().order_by(ThreadUser.last_request_time.desc()).first()
         )
         if query and (query.last_request_id < 999):
-            update_day = query.last_request_time.replace(
+            request_day = query.last_request_time.replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
             previous_day = datetime.now().replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            time_delta = previous_day - update_day
+            time_delta = previous_day - request_day
             return query.last_request_id + 1 if time_delta < timedelta(days=1) else 0
         else:
             return 0

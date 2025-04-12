@@ -11,7 +11,7 @@ from .image import build_preview_image
 from .db_model import GuildImgRecord
 from .utils import parse_tencent_link_card
 from ..http import process_url
-from ..character import Atri
+from ..character import atri
 from ..send import send_msgs
 
 
@@ -33,7 +33,7 @@ async def resend_pc_unreadable_msg_handle(
     if len(title) > 50:
         title = title[:50] + "…"
     elif not title:
-        title = f"{Atri.general_word('error')}：タイトルを解析することができません"
+        title = f"{atri.error_occurred}：タイトルを解析することができません"
 
     # 处理url防止qq二度解析（在http后添加一个零宽空格）
     link = process_url(link)
@@ -44,11 +44,7 @@ async def resend_pc_unreadable_msg_handle(
     to_send: list[Message] = []
     hint_msg = Message(MessageSegment.text("🔗 こちらはURLです："))
     content = Message(MessageSegment.text(f"{title}\n{link}"))
-    footer = Message(
-        MessageSegment.text(
-            f"{Atri.general_word('modal_particle')}、{Atri.general_word('fuck_tencent')}"
-        )
-    )
+    footer = Message(MessageSegment.text(f"{atri.modal_particle}、{atri.fuck_tencent}"))
     to_send.extend([hint_msg, content, footer])
     await send_msgs(event.channel_id, to_send)
 
@@ -82,11 +78,11 @@ async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent
         )
         foot_banner = Message(
             MessageSegment.text(
-                f"◤◢◤◢◤◢◤◢◤◢◤◢\n🍀tap URL above to see🍀\n◤◢◤◢◤◢◤◢◤◢◤◢\n{Atri.general_word('modal_particle')}、{Atri.general_word('proud')}"
+                f"◤◢◤◢◤◢◤◢◤◢◤◢\n🍀tap URL above to see🍀\n◤◢◤◢◤◢◤◢◤◢◤◢\n{atri.modal_particle}、{atri.proud}"
             )
         )
         to_send.extend([head_banner, preview_msg, hint_msg, img_url, foot_banner])
         await send_msgs(event.channel_id, to_send)
     else:
-        to_send = f"{Atri.general_word('loading')}。データが見つかりません"
+        to_send = f"{atri.loading}。データが見つかりません"
         await send_msgs(event.channel_id, to_send)
