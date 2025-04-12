@@ -19,7 +19,7 @@ from nonebot_plugin_guild_patch import GuildMessageEvent  # noqa: E402
 from . import scheduler as scheduler  # noqa: E402
 from .db_operator import get_wordcloud_by_time  # noqa: E402
 from .analyzer import get_wordcloud_img  # noqa: E402
-from ..character import Atri  # noqa: E402
+from ..character import atri  # noqa: E402
 from ..utils import at_user, is_admin_user  # noqa: E402
 from ..send import send_msgs  # noqa: E402
 
@@ -37,9 +37,7 @@ async def yesterday_wordcloud_handle(
     start_time = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
     end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
     channel_id = args.extract_plain_text()
-    progress_msg = (
-        f"ワードクラウドをジェネレートしますね。{Atri.general_word('loading')}"
-    )
+    progress_msg = f"ワードクラウドをジェネレートしますね。{atri.loading}"
     await send_msgs(event.channel_id, progress_msg)
 
     resp = "指定されたチャンネル"
@@ -52,7 +50,7 @@ async def yesterday_wordcloud_handle(
     image = await get_wordcloud_img(messages)
     if image:
         msg = MessageSegment.text(
-            f"{Atri.general_word('modal_particle')}、{resp}のワードクラウドがジェネレートしました🎉、{Atri.general_word('proud')}"
+            f"{atri.modal_particle}、{resp}のワードクラウドがジェネレートしました🎉、{atri.proud}"
         ) + MessageSegment.image(image)
         await send_msgs(event.channel_id, msg)
     else:
