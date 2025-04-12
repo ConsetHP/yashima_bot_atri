@@ -14,7 +14,7 @@ from peewee import (
     DateTimeField,
 )
 
-from ..database.base import BaseModel
+from ...database.base import BaseModel
 
 
 class ThreadUser(BaseModel):
@@ -50,9 +50,6 @@ class ThreadNotFoundError(Exception): ...
 
 
 class UserNotFoundError(Exception): ...
-
-
-class InfoNotFoundError(Exception): ...
 
 
 class AddThreadError(Exception): ...
