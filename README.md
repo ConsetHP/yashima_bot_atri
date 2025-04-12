@@ -7,7 +7,7 @@
 
 ![GitHub License](https://img.shields.io/github/license/ConsetHP/yashima_bot_atri)
 ![Static Badge](https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=ffdf76)
-[![qq-qun](https://img.shields.io/static/v1?label=QQ%E9%A2%91%E9%81%93&message=840Headquarter&color=blue)](https://pd.qq.com/s/hfdjwjoif)
+[![qq-guild](https://img.shields.io/static/v1?label=QQ%E9%A2%91%E9%81%93&message=840Headquarter&color=blue)](https://pd.qq.com/s/hfdjwjoif)
 
 </div>
 
@@ -17,7 +17,7 @@ Even though the project name has contained "ATRI", but please be aware that this
 
 ## Introduction
 
-A QQ-bot that dedicates to a specific QQ channel, powered by [kusa_bot](https://github.com/VonXXGhost/kusa_bot_none) and developed based on [NoneBot2](https://github.com/nonebot/nonebot2)
+A QQ-bot that dedicates to a specific QQ channel, originated from [kusa_bot](https://github.com/VonXXGhost/kusa_bot_none) and developed based on [NoneBot2](https://github.com/nonebot/nonebot2)
 
 ## Features
 
@@ -25,6 +25,7 @@ A QQ-bot that dedicates to a specific QQ channel, powered by [kusa_bot](https://
 - use queue while sending messages to avoid getting banned
 - send wordcloud images regularly
 - customize wordcloud generated image's appearance
+- send post to forum channels in chat channel
 - transfer qq's mini-app cards into user-friendly urls
 - recover images that are recalled by tencent's cencorship system
 - synchronize chat messages between guild channel and minecraft server
