@@ -38,4 +38,5 @@ class Classic(Theme):
         image = wordcloud.generate_from_frequencies(frequency).to_image()
         image_bytes = BytesIO()
         image.save(image_bytes, format="PNG")
+        image.close()
         return image_bytes

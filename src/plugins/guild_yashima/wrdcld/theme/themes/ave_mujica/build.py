@@ -79,4 +79,5 @@ class AveMujica(Theme):
         background.paste(overlay, (0, 0), overlay)
         result_bytes = BytesIO()
         background.save(result_bytes, format="PNG")
+        background.close()
         return result_bytes
