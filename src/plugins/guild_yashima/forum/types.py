@@ -1,7 +1,7 @@
 import re
 
 from dataclasses import dataclass
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 
 from nonebot.adapters.qq.models import User
@@ -117,7 +117,7 @@ class UploadInfo(BaseModel):
     """目标频道"""
     nickname: str | None = None
     """发布者昵称"""
-    upload_time: datetime = datetime.now()
+    upload_time: datetime = Field(default_factory=datetime.now)
     """上传时间"""
 
     def get_formatted_time(self) -> str:
