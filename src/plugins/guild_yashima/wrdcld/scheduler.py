@@ -39,9 +39,6 @@ async def yesterday_wordcloud_job():
                     msg = MessageSegment.text(
                         f"{atri.modal_particle}、このチャンネルのワードクラウドがこちらです、{atri.proud}"
                     ) + MessageSegment.image(image)
-                    msg += MessageSegment.text(
-                        "\n📢 お知らせ\n✨ 一键发帖功能已上线，可以试试 @ATORIbot /一键发帖"
-                    )
                     await send_msgs(channel, msg)
                 else:
                     logger.warning(f"频道词云图片生成失败：{channel}")
