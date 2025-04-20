@@ -11,7 +11,7 @@ from ..send import send_msgs
 from ..character import atri
 
 
-@scheduler.scheduled_job("cron", minute="10", hour="0", id="yesterday_wordcloud_job")
+@scheduler.scheduled_job("cron", minute="30", hour="0", id="yesterday_wordcloud_job")
 async def yesterday_wordcloud_job():
     try:
         overall_target_channel = get_config()["wordcloud"]["overall_target_channel"]
