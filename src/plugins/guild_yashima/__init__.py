@@ -9,7 +9,6 @@ from nonebot.plugin import (
     on_command,
     require,
 )
-from nonebot.rule import to_me
 
 require("nonebot_plugin_apscheduler")
 require("nonebot_plugin_guild_patch")
@@ -26,9 +25,9 @@ from . import (  # noqa: E402
     guild_plan,
     forum,
 )
-from .send import test_sendable_msg_handle  # noqa: E402
+from .send import test_sendable_msg_handle, send_msgs  # noqa: E402
 from .database.db_init import init_database  # noqa: E402
-from .utils import get_config, is_admin_user, reload_config, at_user  # noqa: E402
+from .utils import get_config, is_admin_user, reload_config  # noqa: E402
 from .character import atri  # noqa: E402
 from .subscribe.scheduler.manager import init_scheduler  # noqa: E402
 
@@ -38,24 +37,12 @@ init_database(get_config()["db"]["file"])
 # 订阅计划任务初始化
 get_driver().on_startup(init_scheduler)
 
-reload_config_matcher = on_fullmatch("重载配置", rule=to_me(), permission=is_admin_user)
+reload_config_matcher = on_fullmatch("重载配置", permission=is_admin_user)
 
 
 # 萝卜子火箭拳相关
 atri_rocket_fists = on_keyword(
-    {
-        "破铜烂铁",
-        "ガラクタ",
-        "ポンコツ",
-        "がらくた",
-        "ぽんこつ",
-        "萝卜子",
-        "废物",
-        "ロボっこ",
-        "ロボっコ",
-        "ロボっ子",
-    },
-    rule=(to_me()),
+    {"ポンコツ"},
     handlers=[atri.qq_ping_handle, atri.cqhttp_ping_handle],
 )
 
@@ -68,7 +55,7 @@ test_sendable_msg = on_command(
 @reload_config_matcher.handle()
 async def _(event: GuildMessageEvent):
     reload_config()
-    await reload_config_matcher.send(at_user(event) + "コンフィグがリロード完了です")
+    await send_msgs(event.channel_id, "ok")
 
 
 __all__ = [

@@ -1,5 +1,4 @@
 from typing import Union
-from datetime import datetime
 
 from nonebot.adapters.minecraft import (
     BaseChatEvent,
@@ -18,7 +17,6 @@ CARPET_BOT_PREFIX: list[str] = ["bot_", "BOT_", "Bot_"]  # 地毯模组假人前
 async def mc_msg_handle(event: Union[BaseChatEvent, BaseDeathEvent]):
     """将 Minecraft 玩家聊天消息发至频道"""
     msg_text = str(event.message)
-    timestamp = f"[{datetime.now().strftime('%H:%M:%S')}]"
 
     # 屏蔽假人死亡消息
     for prefix in CARPET_BOT_PREFIX:
@@ -28,7 +26,7 @@ async def mc_msg_handle(event: Union[BaseChatEvent, BaseDeathEvent]):
     msg_result = (
         msg_text
         if isinstance(event, BaseDeathEvent)
-        else f"{timestamp} {event.player.nickname} {get_config()['minecraft']['minecraft_message_accent']}{msg_text}"
+        else f"{event.player.nickname} {get_config()['minecraft']['minecraft_message_accent']}{msg_text}"
     )
     await send_mc_msg_to_qq(event.server_name, msg_result)
 

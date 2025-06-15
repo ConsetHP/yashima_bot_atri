@@ -6,21 +6,39 @@ from nonebot.adapters.qq import MessageCreateEvent
 from nonebot.adapters.qq import MessageSegment as QQMessageSegment
 from nonebot.matcher import Matcher
 
-from .utils import at_user
 from .send import send_msgs
 
 
-Phrases = list[int]
+Phrases = list[str]
 
 
 class Character(BaseModel):
     """角色基类"""
 
     def __getattribute__(self, name):
-        value = super().__getattribute__(name)
-        if isinstance(value, list) and all(isinstance(i, str) for i in value):
-            return random.choice(value)
-        return value
+        # 如果访问的是 Pydantic 的内部字段，正常处理
+        internal_fields = (
+            "__dict__",
+            "__fields__",
+            "__annotations__",
+            "__class__",
+            "__config__",
+            "__module__",
+        )
+        if name.startswith("_") or name in internal_fields:
+            return super().__getattribute__(name)
+
+        fields = super().__getattribute__("__annotations__")
+        if name in fields:
+            raw_value = super().__getattribute__("__dict__").get(name)
+            if isinstance(raw_value, list) and all(
+                isinstance(i, str) for i in raw_value
+            ):
+                return random.choice(raw_value)
+            return raw_value
+
+        # 默认处理
+        return super().__getattribute__(name)
 
 
 class Atri(Character):
@@ -81,7 +99,7 @@ class Atri(Character):
     """加载中"""
 
     async def cqhttp_ping_handle(self, _: Matcher, event: GuildMessageEvent):
-        msg = at_user(event) + f"{self.obey_robot_law}、{self.rocket_punch}"
+        msg = f"{self.obey_robot_law}、{self.rocket_punch}"  # 带上 @用户名 可能会被检测
         await send_msgs(event.channel_id, msg)
 
     async def qq_ping_handle(self, matcher: Matcher, event: MessageCreateEvent):

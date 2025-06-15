@@ -9,7 +9,6 @@ from nonebot.adapters import Message
 from nonebot.adapters.onebot.v11 import MessageSegment
 from nonebot.matcher import Matcher
 from nonebot.plugin import on_command, require
-from nonebot.rule import to_me
 from nonebot.params import CommandArg
 
 require("nonebot_plugin_guild_patch")
@@ -24,9 +23,7 @@ from ..utils import at_user, is_admin_user  # noqa: E402
 from ..send import send_msgs  # noqa: E402
 
 
-yesterday_wordcloud_matcher = on_command(
-    "昨日词云", rule=to_me(), permission=is_admin_user
-)
+yesterday_wordcloud_matcher = on_command("昨日词云", permission=is_admin_user)
 
 
 @yesterday_wordcloud_matcher.handle()
