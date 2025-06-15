@@ -1,5 +1,5 @@
 """
-数据库模型
+数据库模型  ! 需要重构
 """
 
 from datetime import datetime
@@ -20,5 +20,19 @@ class GuildMessageRecord(BaseModel):
 
 class GuildImgRecord(GuildMessageRecord):
     """频道图片url"""
+
+    pass
+
+
+class QQGuildMessageRecord(
+    GuildMessageRecord
+):  # 由于 user_id 与 cqhttp 返回的 user_id 不通用，暂时分开存储
+    """官方API频道文字消息"""
+
+    pass
+
+
+class QQGuildImgRecord(GuildMessageRecord):
+    """官方API频道图片消息"""
 
     pass
