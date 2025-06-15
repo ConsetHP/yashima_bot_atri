@@ -1,9 +1,9 @@
 from nonebot.log import logger
 from nonebot.adapters import Message
-from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.adapters.qq import MessageCreateEvent as GuildMessageEvent
 from nonebot.params import EventMessage
 
-from .db_model import GuildImgRecord, GuildMessageRecord
+from .db_model import QQGuildImgRecord, QQGuildMessageRecord
 
 
 async def save_guild_img_url_handle(
@@ -21,7 +21,7 @@ async def save_guild_img_url_handle(
                     if msg.data["url"].startswith("http")
                     else f"https://{msg.data['url']}"
                 )
-                model = GuildImgRecord(
+                model = QQGuildImgRecord(
                     channel_id=event.channel_id,
                     user_id=event.get_user_id(),
                     content=url,
@@ -37,7 +37,7 @@ async def save_recv_guild_msg_handle(event: GuildMessageEvent):
 
     if len(msg) > 1000 or msg == "":
         return
-    model = GuildMessageRecord(
+    model = QQGuildMessageRecord(
         channel_id=event.channel_id, user_id=event.get_user_id(), content=msg
     )
     model.save()

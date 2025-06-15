@@ -26,7 +26,6 @@ _COMMAND_DISPATCH_TASKS: set[asyncio.Task] = set()
 
 add_sub_matcher = on_command(
     "添加订阅",
-    rule=to_me(),
     permission=is_admin_user,
     block=True,
 )
@@ -34,14 +33,13 @@ add_sub_matcher.handle()(set_target_channel_id)
 do_add_sub(add_sub_matcher)
 
 
-query_sub_matcher = on_command("查询订阅", rule=to_me(), block=True)
+query_sub_matcher = on_command("查询订阅", block=True)
 query_sub_matcher.handle()(set_target_channel_id)
 do_query_sub(query_sub_matcher)
 
 
 del_sub_matcher = on_command(
     "删除订阅",
-    rule=to_me(),
     permission=is_admin_user,
     block=True,
 )

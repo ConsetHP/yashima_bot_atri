@@ -11,15 +11,16 @@ from ..send import send_msgs
 from ..character import atri
 
 
-@scheduler.scheduled_job("cron", minute="30", hour="0", id="yesterday_wordcloud_job")
+@scheduler.scheduled_job("cron", minute="0", hour="4", id="yesterday_wordcloud_job")
 async def yesterday_wordcloud_job():
     try:
         overall_target_channel = get_config()["wordcloud"]["overall_target_channel"]
         debug_channel = get_config()["debug"]["test_channel_id"]
         disabled_channels = get_config()["wordcloud"]["disabled_channels"]
-        yesterday = datetime.now() - timedelta(days=1)
-        start_time = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_time = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
+        today = datetime.now()
+        yesterday = today - timedelta(days=1)
+        start_time = yesterday.replace(hour=4, minute=0, second=0, microsecond=0)
+        end_time = today.replace(hour=3, minute=59, second=59, microsecond=0)
         channels = query_wordcloud_generatable_channel_ids(start_time, end_time)
         if len(channels) > 0:
             logger.info(f"以下频道将生成词云：{channels}")

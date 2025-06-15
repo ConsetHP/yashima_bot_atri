@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from peewee import fn
 
-from ..diary.db_model import GuildMessageRecord
+from ..diary.db_model import QQGuildMessageRecord as GuildMessageRecord
 from ..utils import get_config
 
 

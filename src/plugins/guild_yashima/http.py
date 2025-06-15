@@ -2,6 +2,7 @@ import re
 from re import Match
 
 import httpx
+from datetime import datetime
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import MessageSegment
 from nonebot.adapters import Message
@@ -24,24 +25,22 @@ def http_client(*args, **kwargs):
     return httpx.AsyncClient(*args, **kwargs)
 
 
-def bypass_tencent_url_detection(
+def bypass_tencent_detection(
     msg: Message[MessageSegment] | MessageSegment | str,
 ) -> Message:
-    """处理消息中的所有URL，防止吞消息"""
+    """绕过腾讯的消息内容检测，防止消息被吞 / 发不出消息"""
     if isinstance(msg, str):
-        new_msg = Message(MessageSegment.text(replace_url_dots(msg)))
+        new_msg = Message(text_message_process(msg))
     elif isinstance(msg, MessageSegment):
         if msg.type == "text":
-            new_msg = Message(MessageSegment.text(replace_url_dots(msg.data["text"])))
+            new_msg = Message(text_message_process(msg.data["text"]))
         else:
             new_msg = Message(msg)
     elif isinstance(msg, Message):
         new_msg = Message()
         for per_msg in msg:
             if per_msg.type == "text":
-                processed_msg = MessageSegment.text(
-                    replace_url_dots(per_msg.data["text"])
-                )
+                processed_msg = text_message_process(per_msg.data["text"])
                 new_msg.append(processed_msg)
             else:
                 new_msg.append(per_msg)
@@ -78,8 +77,8 @@ def process_url(url: str) -> str:
     return url_with_prompt
 
 
-def replace_url_dots(text: str) -> str:
-    """替换URL中的点"""
+def replace_special_characters(text: str) -> str:
+    """替换URL中的点和斜杠，去除http前缀"""
     domain_white_list: list[str] = get_config()["general"]["domain_white_list"]
     domain_pattern = re.compile(r"([0-9a-zA-Z-]{1,}\.)+([a-zA-Z]{2,})")
     url_pattern = re.compile(
@@ -100,3 +99,16 @@ def replace_url_dots(text: str) -> str:
         return url.replace(".", "·")
 
     return url_pattern.sub(replace_dots, text)
+
+
+def text_message_process(text: str) -> MessageSegment:
+    """对文字消息进行反检测处理"""
+    safe_url_text = replace_special_characters(text)
+    final_text = add_time_stamp(safe_url_text)
+    return MessageSegment.text(final_text)
+
+
+def add_time_stamp(text: str) -> str:
+    """在文字前添加时间戳"""
+    timestamp = f"[{datetime.now().strftime(r'Ⓨ%YⓂ%mⒹ%d %H:%M:%S')}]"
+    return f"{timestamp} {text}"

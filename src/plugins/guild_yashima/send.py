@@ -16,7 +16,7 @@ from nonebot.adapters import Message
 from nonebot.log import logger
 
 from .utils import get_config, get_active_guild_id
-from .http import bypass_tencent_url_detection
+from .http import bypass_tencent_detection
 
 QUEUE: deque[tuple[str, Message | str, int]] = deque()
 
@@ -31,8 +31,9 @@ async def _do_send(channel_id: str, msg: Message | str):
         await get_bot(get_config()["general"]["bot_id"]).send_guild_channel_msg(
             guild_id=get_active_guild_id(), channel_id=channel_id, message=msg
         )
-    except ActionFailed:
-        logger.warning("发送消息失败")
+        # logger.info(f"暂时停止发送消息\nchannel_id: {channel_id}, msg: {msg}")
+    except ActionFailed as af:
+        logger.warning(f"发送消息失败：{af}")
 
 
 async def do_send_msgs():
@@ -65,7 +66,7 @@ async def do_send_msgs():
 
 
 async def _send_msgs_dispatch(channel_id: str, msg: Message | str):
-    msg = bypass_tencent_url_detection(msg)
+    msg = bypass_tencent_detection(msg)
     QUEUE.append((channel_id, msg, MESSAGE_SEND_RETRY))
     # 队列长度在 append 前是 0
     if len(QUEUE) == 1:
