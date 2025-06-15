@@ -3,7 +3,7 @@ import json
 from nonebot.log import logger
 from nonebot.adapters import Message
 from nonebot.adapters.onebot.v11 import MessageSegment
-from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot_plugin_guild_patch import GuildMessageEvent, GuildChannelRecallNoticeEvent
 from nonebot.params import EventMessage
 from nonebot.matcher import Matcher
 
@@ -42,7 +42,7 @@ async def resend_pc_unreadable_msg_handle(
         logger.warning(f"链接过长，将不会发送：{link}")
         return
     to_send: list[Message] = []
-    hint_msg = Message(MessageSegment.text("🔗 こちらはURLです："))
+    hint_msg = Message(MessageSegment.text("🔽 URLはこちらです："))
     content = Message(MessageSegment.text(f"{title}\n{link}"))
     footer = Message(MessageSegment.text(f"{atri.modal_particle}、{atri.fuck_tencent}"))
     to_send.extend([hint_msg, content, footer])
@@ -86,3 +86,14 @@ async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent
     else:
         to_send = f"{atri.loading}。データが見つかりません"
         await send_msgs(event.channel_id, to_send)
+
+
+async def notify_system_recalling_handle(
+    _: Matcher, event: GuildChannelRecallNoticeEvent
+):
+    """主动提醒吞消息行为"""
+    await send_msgs(event.channel_id, "藤子的大手 撤回了一条消息")
+
+
+def is_system_operator_recall(event: GuildChannelRecallNoticeEvent) -> bool:
+    return event.user_id == 0
