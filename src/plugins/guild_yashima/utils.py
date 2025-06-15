@@ -5,6 +5,7 @@ from nonebot import Bot, get_bot
 from nonebot.adapters.onebot.v11 import MessageSegment
 from nonebot.log import logger
 from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.adapters.qq import MessageCreateEvent
 from tomlkit.toml_document import TOMLDocument
 
 
@@ -79,3 +80,13 @@ async def set_role(active: bool, role_id: str, user_id: str):
 
 async def is_admin_user(event: GuildMessageEvent) -> bool:
     return event.get_user_id() in bot_config["auth"]["admin"]
+
+
+async def is_me(event: MessageCreateEvent) -> bool:
+    """仅用于伪主动matcher的permission"""
+    return event.get_user_id() == bot_config["general"]["bot_special_id"]
+
+
+async def is_normal_channel(event: MessageCreateEvent) -> bool:
+    """排除测试频道用的Rule"""
+    return event.channel_id != bot_config["debug"]["test_channel_id"]

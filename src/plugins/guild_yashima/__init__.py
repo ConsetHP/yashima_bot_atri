@@ -7,6 +7,7 @@ from nonebot.plugin import (
     on_fullmatch,
     on_keyword,
     on_command,
+    on_message,
     require,
 )
 
@@ -25,9 +26,9 @@ from . import (  # noqa: E402
     guild_plan,
     forum,
 )
-from .send import test_sendable_msg_handle, send_msgs  # noqa: E402
+from .send import test_sendable_msg_handle, send_by_official_api_handle, send_msgs  # noqa: E402
 from .database.db_init import init_database  # noqa: E402
-from .utils import get_config, is_admin_user, reload_config  # noqa: E402
+from .utils import get_config, is_admin_user, is_me, is_normal_channel, reload_config  # noqa: E402
 from .character import atri  # noqa: E402
 from .subscribe.scheduler.manager import init_scheduler  # noqa: E402
 
@@ -49,6 +50,11 @@ atri_rocket_fists = on_keyword(
 # 测试 URL 发送相关
 test_sendable_msg = on_command(
     "测试发送", handlers=[test_sendable_msg_handle], permission=is_admin_user
+)
+
+# 伪主动相关
+send_by_official = on_message(
+    rule=is_normal_channel, handlers=[send_by_official_api_handle], permission=is_me
 )
 
 
