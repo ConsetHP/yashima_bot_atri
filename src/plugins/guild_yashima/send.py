@@ -8,6 +8,8 @@ from collections import deque
 from typing import Union
 
 from nonebot_plugin_guild_patch import GuildMessageEvent
+from nonebot.adapters.qq import MessageCreateEvent
+from nonebot.adapters.qq.bot import Bot as QQBot
 from nonebot.params import CommandArg
 from nonebot.matcher import Matcher
 from nonebot import get_bot
@@ -101,3 +103,18 @@ async def test_sendable_msg_handle(
         await send_msgs(event.channel_id, "メッセージが長すぎます")
         return
     await send_msgs(event.channel_id, msg)
+
+
+async def send_by_official_api_handle(matcher: Matcher, event: MessageCreateEvent):
+    """发送伪主动消息"""
+    matcher.stop_propagation()
+    msg_id: str = event.id
+    bot: QQBot = get_bot(get_config()["general"]["official_bot_id"])
+    try:
+        await bot.delete_message(
+            channel_id=event.channel_id, message_id=msg_id, hidetip=True
+        )
+    except ActionFailed as af:
+        logger.warning(f"撤回消息失败：{af}")
+        await matcher.finish()
+    await matcher.send(event.get_message())

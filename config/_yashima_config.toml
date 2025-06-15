@@ -1,5 +1,6 @@
 [general]
 bot_id = "114514"  # 机器人 QQ 号
+bot_special_id = "1145142333"  # 官方 QQ api获取的机器人的id，与 QQ 号、cqhttp 获取的机器人id无关
 official_bot_id = "114514233"  # 与.env中的botid保持一致
 send_failure_retry = 5  # 消息发送失败重试次数
 send_interval = 1.5  # 消息队列发送间隔（秒）
