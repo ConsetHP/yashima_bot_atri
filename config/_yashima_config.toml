@@ -50,5 +50,12 @@ platform_theme = {"weibo" = "ht2i"}  # 为特定平台指定渲染主题（尽�
 [forum]
 default_channel_name = "abc"  # /一键发帖 默认发送的帖子区名称
 
+[notice]
+user = "114514@example.com"  # 通知邮箱
+host = "smtp.example.com"  # 通知邮箱对应的smtp服务器域名
+port = 233  # smtp服务器端口
+key = "exampleabcd"  # SMTP服务器授权码
+cd = 10  # 断连通知冷却时间，单位：秒。断连后在该时间内重连则不通知
+
 [debug]
 test_channel = ""  # 测试用的频道ID

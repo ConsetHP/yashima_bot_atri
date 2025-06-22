@@ -31,6 +31,7 @@ from .database.db_init import init_database  # noqa: E402
 from .utils import get_config, is_admin_user, is_me, is_normal_channel, reload_config  # noqa: E402
 from .character import atri  # noqa: E402
 from .subscribe.scheduler.manager import init_scheduler  # noqa: E402
+from .notice import test_disconnect_notice_handle  # noqa: E402
 
 # 数据库初始化
 init_database(get_config()["db"]["file"])
@@ -55,6 +56,11 @@ test_sendable_msg = on_command(
 # 伪主动相关
 send_by_official = on_message(
     rule=is_normal_channel, handlers=[send_by_official_api_handle], permission=is_me
+)
+
+# 断连通知
+disconnect_notice = on_command(
+    "测试掉线通知", handlers=[test_disconnect_notice_handle], permission=is_admin_user
 )
 
 
