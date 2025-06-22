@@ -1,5 +1,7 @@
 import json
 
+from datetime import datetime
+
 from nonebot.log import logger
 from nonebot.adapters import Message
 from nonebot.adapters.onebot.v11 import MessageSegment
@@ -10,6 +12,7 @@ from nonebot.matcher import Matcher
 from .image import build_preview_image
 from .db_model import GuildImgRecord
 from .utils import parse_tencent_link_card
+from ..utils import get_config
 from ..http import process_url
 from ..character import atri
 from ..send import send_msgs
@@ -89,11 +92,21 @@ async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent
 
 
 async def notify_system_recalling_handle(
-    _: Matcher, event: GuildChannelRecallNoticeEvent
+    matcher: Matcher, event: GuildChannelRecallNoticeEvent
 ):
     """主动提醒吞消息行为"""
+    if str(event.channel_id) == get_config()["debug"]["test_channel_id"]:
+        await matcher.finish()
+
+    # 凌晨暂时静默，避开藤子撤回时间段
+    today = datetime.now()
+    silent_start = today.replace(hour=0, minute=0, second=1, microsecond=0)
+    silent_end = today.replace(hour=5, minute=0, second=0, microsecond=0)
+    if today >= silent_start and today <= silent_end:
+        await matcher.finish()
+
     await send_msgs(event.channel_id, "藤子的大手 撤回了一条消息")
 
 
-def is_system_operator_recall(event: GuildChannelRecallNoticeEvent) -> bool:
+async def is_system_operator_recall(event: GuildChannelRecallNoticeEvent) -> bool:
     return event.user_id == 0

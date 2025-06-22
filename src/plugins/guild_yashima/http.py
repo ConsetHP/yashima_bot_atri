@@ -70,7 +70,7 @@ def process_url(url: str) -> str:
             if not any(param.startswith(f"{key}=") for key in params_to_remove)
         ]
         url = f"{base_url}?{'&'.join(filtered_params)}"
-    elif url.count("www.bilibili.com") != 0 or url.count("b23.tv") != 0:
+    elif url.count("bilibili.com") != 0 or url.count("b23.tv") != 0:
         # b站的追踪参数
         url = re.sub(r"(\b(?:https?:\/\/|www\.)\S+?)\?[^ \n]*", r"\1", url)
     url_with_prompt = "（PC only）" + url
