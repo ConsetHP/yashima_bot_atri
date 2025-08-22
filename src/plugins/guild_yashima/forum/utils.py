@@ -119,4 +119,4 @@ def replace_qq_emoji(text: str) -> str:
 
 
 def is_bot_thread(event: ForumThreadUpdateEvent) -> bool:
-    return event.author_id == get_config()["general"]["official_bot_id"]
+    return event.author_id == get_config()["general"]["official_bot_open_id"]

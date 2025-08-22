@@ -6,7 +6,7 @@ import re
 import asyncio
 import concurrent.futures
 from io import BytesIO
-from typing import Dict, List, Optional
+from typing import Optional
 from functools import partial
 
 import jieba
@@ -33,6 +33,8 @@ def pre_process(msg: str) -> str:
     """对消息进行预处理"""
     # 去除常见机器人指令
     msg = remove_bot_command(msg)
+    # 去除使用了b站复制链接功能产生的消息
+    msg = re.sub(r"^【.+?-哔哩哔哩】 https://b23\.tv/\w+$", "", msg)
     # 去除网址
     # https://stackoverflow.com/a/17773849/9212748
     msg = re.sub(
@@ -60,7 +62,7 @@ def remove_bot_command(msg: str) -> str:
         return msg
 
 
-def analyse_message(msg: str) -> Dict[str, float]:
+def analyse_message(msg: str) -> dict[str, float]:
     """
     分析消息
     分词，并统计词频
@@ -77,7 +79,7 @@ def analyse_message(msg: str) -> Dict[str, float]:
     return {word: weight for word, weight in words}
 
 
-async def get_wordcloud_img(messages: List[str]) -> Optional[BytesIO]:
+async def get_wordcloud_img(messages: list[str]) -> Optional[BytesIO]:
     """分析消息并渲染词云图片"""
     # 全部都用jieba提前分词，可以让最终输入词云库的权重更合理
     jieba_messages = [pre_process(msg) for msg in messages]

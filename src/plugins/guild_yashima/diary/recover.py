@@ -2,15 +2,14 @@ import json
 
 from datetime import datetime
 
+from nonebot import get_bot
 from nonebot.log import logger
 from nonebot.adapters import Message
-from nonebot.adapters.onebot.v11 import MessageSegment
+from nonebot.adapters.onebot.v11 import MessageSegment, ActionFailed
 from nonebot_plugin_guild_patch import GuildMessageEvent, GuildChannelRecallNoticeEvent
 from nonebot.params import EventMessage
 from nonebot.matcher import Matcher
 
-from .image import build_preview_image
-from .db_model import GuildImgRecord
 from .utils import parse_tencent_link_card
 from ..utils import get_config
 from ..http import process_url
@@ -53,59 +52,81 @@ async def resend_pc_unreadable_msg_handle(
 
 
 async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent):
-    """发送用户在该频道的最后一次发送的图片的url"""
-    query = (
-        GuildImgRecord.select()
-        .where(
-            (GuildImgRecord.channel_id == event.channel_id)
-            & (GuildImgRecord.user_id == event.get_user_id())
-        )
-        .order_by(GuildImgRecord.recv_time.desc())
-        .first()
-    )
+    """发送用户在该频道的最后一次发送的图片的url  TODO: 待重构"""
+    # query = (
+    #     GuildMessageRecord.select()
+    #     .where(
+    #         (GuildMessageRecord.channel.channel_id == event.channel_id)
+    #         & (GuildMessageRecord.user.user_id == event.get_user_id())
+    #         & (GuildMessageRecord.image.is_null(False))
+    #     )
+    #     .order_by(GuildMessageRecord.recv_time.desc())
+    #     .first()
+    # )
 
-    if query:
-        to_send: list[Message] = []
-        img_url = Message(MessageSegment.text(f"{query.content}"))
-        head_banner = Message(
-            MessageSegment.text("◤◢◤◢◤◢◤◢◤◢◤◢\n🈲  banned by tencent 🈲\n◤◢◤◢◤◢◤◢◤◢◤◢")
-        )
-        preview_msg = Message(
-            MessageSegment.text("🏞️ 画像のプレヴュー")
-            + MessageSegment.image(await build_preview_image(str(query.content)))
-        )
-        hint_msg = Message(
-            MessageSegment.text(
-                "🔗 画像のURLはこちらです：\n（如果出现'已停止访问该网页'，请手动复制 URL 到正规浏览器中打开）"
-            )
-        )
-        foot_banner = Message(
-            MessageSegment.text(
-                f"◤◢◤◢◤◢◤◢◤◢◤◢\n🍀tap URL above to see🍀\n◤◢◤◢◤◢◤◢◤◢◤◢\n{atri.modal_particle}、{atri.proud}"
-            )
-        )
-        to_send.extend([head_banner, preview_msg, hint_msg, img_url, foot_banner])
-        await send_msgs(event.channel_id, to_send)
-    else:
-        to_send = f"{atri.loading}。データが見つかりません"
-        await send_msgs(event.channel_id, to_send)
+    # if query:
+    #     to_send: list[Message] = []
+    #     img_url = Message(MessageSegment.text(f"{query.content}"))
+    #     head_banner = Message(
+    #         MessageSegment.text("◤◢◤◢◤◢◤◢◤◢◤◢\n🈲  banned by tencent 🈲\n◤◢◤◢◤◢◤◢◤◢◤◢")
+    #     )
+    #     preview_msg = Message(
+    #         MessageSegment.text("🏞️ 画像のプレヴュー")
+    #         + MessageSegment.image(await build_preview_image(str(query.content)))
+    #     )
+    #     hint_msg = Message(
+    #         MessageSegment.text(
+    #             "🔗 画像のURLはこちらです：\n（如果出现'已停止访问该网页'，请手动复制 URL 到正规浏览器中打开）"
+    #         )
+    #     )
+    #     foot_banner = Message(
+    #         MessageSegment.text(
+    #             f"◤◢◤◢◤◢◤◢◤◢◤◢\n🍀tap URL above to see🍀\n◤◢◤◢◤◢◤◢◤◢◤◢\n{atri.modal_particle}、{atri.proud}"
+    #         )
+    #     )
+    #     to_send.extend([head_banner, preview_msg, hint_msg, img_url, foot_banner])
+    #     await send_msgs(event.channel_id, to_send)
+    # else:
+    #     to_send = f"{atri.loading}。データが見つかりません"
+    #     await send_msgs(event.channel_id, to_send)
 
 
 async def notify_system_recalling_handle(
     matcher: Matcher, event: GuildChannelRecallNoticeEvent
 ):
     """主动提醒吞消息行为"""
+    # 检查被撤回消息的发送者
+    try:
+        msg = await get_bot(get_config()["general"]["bot_id"]).get_guild_msg(
+            message_id=event.message_id, no_cache=False
+        )
+        logger.info(f"频道用户 {msg['sender']['nickname']} 的消息被系统撤回")
+
+        # 被撤回的是机器人自己的消息则不提醒
+        if msg["sender"]["tiny_id"] == str(get_config()["general"]["bot_tiny_id"]):
+            matcher.finish()
+    except ActionFailed as af:
+        logger.warning(f"撤回消息详情获取错误：{af}")
+
+        # 确保不在半夜刷屏
+        current_time = datetime.now()
+        if is_silent_period(current_time):
+            await matcher.finish()
+
+    # 不在测试频道提醒
     if str(event.channel_id) == get_config()["debug"]["test_channel_id"]:
         await matcher.finish()
 
-    # 凌晨暂时静默，避开藤子撤回时间段
-    today = datetime.now()
-    silent_start = today.replace(hour=0, minute=0, second=1, microsecond=0)
-    silent_end = today.replace(hour=5, minute=0, second=0, microsecond=0)
-    if today >= silent_start and today <= silent_end:
-        await matcher.finish()
-
     await send_msgs(event.channel_id, "藤子的大手 撤回了一条消息")
+
+
+def is_silent_period(current_time: datetime) -> bool:
+    """是否是藤子批量撤回时间段"""
+    silent_start = current_time.replace(hour=0, minute=0, second=1, microsecond=0)
+    silent_end = current_time.replace(hour=9, minute=0, second=0, microsecond=0)
+    if current_time >= silent_start and current_time <= silent_end:
+        return True
+    return False
 
 
 async def is_system_operator_recall(event: GuildChannelRecallNoticeEvent) -> bool:

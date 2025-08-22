@@ -1,5 +1,11 @@
 import jsonpath_ng as jsonpath
+
+from nonebot import get_bot
 from nonebot.log import logger
+from nonebot.adapters.qq import Bot
+from nonebot.adapters.qq.models.guild import Member, Channel, Role
+
+from ..utils import get_config
 
 
 def parse_tencent_link_card(json_data: str) -> tuple[str, str] | None:
@@ -33,3 +39,21 @@ def parse_tencent_link_card(json_data: str) -> tuple[str, str] | None:
         logger.warning(f"无法提取链接：{json_data}")
 
     return (link, title)
+
+
+async def get_guild_user(guild_id: str, user_id: str) -> Member:
+    """获取频道成员详情"""
+    bot: Bot = get_bot(get_config()["general"]["official_bot_id"])
+    return await bot.get_member(guild_id=guild_id, user_id=user_id)
+
+
+async def get_guild_channel(channel_id: str) -> Channel:
+    """获取子频道详情"""
+    bot: Bot = get_bot(get_config()["general"]["official_bot_id"])
+    return await bot.get_channel(channel_id=channel_id)
+
+
+async def get_guild_roles(guild_id: str) -> list[Role]:
+    """获取频道成员身分组列表"""
+    bot: Bot = get_bot(get_config()["general"]["official_bot_id"])
+    return await bot.get_guild_roles(guild_id=guild_id)

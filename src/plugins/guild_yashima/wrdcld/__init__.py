@@ -16,9 +16,9 @@ require("nonebot_plugin_guild_patch")
 from nonebot_plugin_guild_patch import GuildMessageEvent  # noqa: E402
 
 from . import scheduler as scheduler  # noqa: E402
-from .db_operator import get_wordcloud_by_time  # noqa: E402
 from .analyzer import get_wordcloud_img  # noqa: E402
 from ..character import atri  # noqa: E402
+from ..diary.database.operator import get_messages_by_channel_in_period  # noqa: E402
 from ..utils import at_user, is_admin_user  # noqa: E402
 from ..send import send_msgs  # noqa: E402
 
@@ -43,7 +43,7 @@ async def yesterday_wordcloud_handle(
         resp = "このチャンネル"
     else:
         channel_id = int(channel_id)
-    messages = await get_wordcloud_by_time(channel_id, start_time, end_time)
+    messages = get_messages_by_channel_in_period(channel_id, start_time, end_time)
     image = await get_wordcloud_img(messages)
     if image:
         msg = MessageSegment.text(
