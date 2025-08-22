@@ -7,7 +7,7 @@ require("nonebot_plugin_guild_patch")
 from nonebot_plugin_guild_patch import GuildMessageEvent as GuildMessageEvent  # noqa: E402
 
 from . import scheduler as scheduler  # noqa: E402
-from .record import save_guild_img_url_handle, save_recv_guild_msg_handle  # noqa: E402
+from .record import save_received_guild_msg_handle  # noqa: E402
 from .recover import (  # noqa: E402
     resend_pc_unreadable_msg_handle,
     resend_system_recalled_img_handle,
@@ -17,8 +17,7 @@ from .recover import (  # noqa: E402
 
 
 # 记录消息相关
-msg_record = on_message(handlers=[save_recv_guild_msg_handle])
-img_record = on_message(handlers=[save_guild_img_url_handle])
+msg_record = on_message(handlers=[save_received_guild_msg_handle])
 
 # 恢复审查系统撤回图片相关
 resent_pc_unreadable_msg = on_message(handlers=[resend_pc_unreadable_msg_handle])

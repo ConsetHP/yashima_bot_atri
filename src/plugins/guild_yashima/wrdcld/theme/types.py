@@ -24,9 +24,7 @@ class Theme(ABC, BaseModel):
     @abstractmethod
     def render(
         self, frequency: Dict[str, float], wordcloud_options: dict
-    ) -> Optional[BytesIO]:
-        """对多种Post的实例可以考虑使用@overload"""
-        ...
+    ) -> Optional[BytesIO]: ...
 
 
 class ThemeRegistrationError(Exception):

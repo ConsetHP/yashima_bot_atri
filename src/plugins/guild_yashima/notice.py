@@ -102,8 +102,9 @@ def build_notice_content(platform_name: str, bot_id: str) -> bytes:
     """生成掉线提醒消息"""
     global connect_start_time
     time_delta = datetime.now() - connect_start_time
+    previous_time = f"{datetime.now().strftime(r'%Y-%m-%d %H:%M:%S')}"
     time_survived = f"{time_delta.days}天 {time_delta.seconds // 3600}小时 {(time_delta.seconds % 3600) // 60}分钟"
-    msg = f"适配器【{platform_name}】的账号【{bot_id}】已下线。\n存活时间：{time_survived}"
+    msg = f"适配器【{platform_name}】的账号【{bot_id}】已下线。\n当前时间：{previous_time}\n存活时间：{time_survived}"
     return msg
 
 

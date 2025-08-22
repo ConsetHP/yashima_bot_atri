@@ -1,7 +1,13 @@
 from peewee import SqliteDatabase
 
 from .base import db
-from ..diary.db_model import QQGuildImgRecord, QQGuildMessageRecord
+from ..diary.database.model import (
+    GuildMessageRecord,
+    GuildRoleRecord,
+    GuildUserRecord,
+    ChannelRecord,
+    UserRoleMapping,
+)
 from ..subscribe.database.model import (
     GuildSubscribedChannel,
     SubscribeTarget,
@@ -32,8 +38,11 @@ def init_database(db_path: str):
     _db.create_tables(
         [
             ClockEventLog,
-            QQGuildMessageRecord,
-            QQGuildImgRecord,
+            GuildMessageRecord,
+            GuildUserRecord,
+            GuildRoleRecord,
+            ChannelRecord,
+            UserRoleMapping,
             GuildSubscribedChannel,
             SubscribeTarget,
             Subscribe,

@@ -26,8 +26,13 @@ from . import (  # noqa: E402
     guild_plan,
     forum,
 )
-from .send import test_sendable_msg_handle, send_by_official_api_handle, send_msgs  # noqa: E402
+from .send import (  # noqa: E402
+    test_sendable_msg_handle,
+    send_by_official_api_handle,
+    send_msgs,
+)
 from .database.db_init import init_database  # noqa: E402
+from .database.base import db  # noqa: E402
 from .utils import get_config, is_admin_user, is_me, is_normal_channel, reload_config  # noqa: E402
 from .character import atri  # noqa: E402
 from .subscribe.scheduler.manager import init_scheduler  # noqa: E402
@@ -62,6 +67,15 @@ send_by_official = on_message(
 disconnect_notice = on_command(
     "测试掉线通知", handlers=[test_disconnect_notice_handle], permission=is_admin_user
 )
+
+# 数据库手动checkpoint
+db_checkpoint_matcher = on_fullmatch("更新数据库", permission=is_admin_user)
+
+
+@db_checkpoint_matcher.handle()
+async def checkpint_handler(event: GuildMessageEvent):
+    db.execute_sql("PRAGMA wal_checkpoint(FULL);")
+    await send_msgs(event.channel_id, "checkpoint successful")
 
 
 @reload_config_matcher.handle()

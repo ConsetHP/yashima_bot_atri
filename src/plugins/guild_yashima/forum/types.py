@@ -31,6 +31,7 @@ class Upload(RawUpload):
     """转发的消息"""
 
     def is_reply_myself(self) -> bool:
+        """用户在使用一键发帖时，是否回复了自己的消息"""
         if not self.reply:
             return True
         return True if self.author.id == self.reply.author.id else False
