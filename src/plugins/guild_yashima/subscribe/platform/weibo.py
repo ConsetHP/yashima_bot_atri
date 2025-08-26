@@ -103,6 +103,8 @@ class Weibo(NewMessage):
             "Referer": f"https://m.weibo.cn/u/{target}",
             "MWeibo-Pwa": "1",
             "X-Requested-With": "XMLHttpRequest",
+            "User-Agent": r"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/[120.0.0.0](http://120.0.0.0/) Safari/537.36",
+            "Cookie": "fuckweibo",
         }
         # 获取 cookie 见 https://docs.rsshub.app/zh/deploy/config#%E5%BE%AE%E5%8D%9A
         params = {"containerid": "107603" + target}
