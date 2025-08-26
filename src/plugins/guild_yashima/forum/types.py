@@ -39,16 +39,15 @@ class Upload(RawUpload):
     async def generate(self) -> str:
         """生成投稿内容（markdown格式）"""
         self._generate_title()
-        md_content = f"🔃 转发自 #{self.info.source_channel.name}\n"
         if self.reply:
-            md_content += (
+            md_content = (
                 f"🆔 {self.author.username}\n" if self.is_reply_myself() else ""
             )
         else:
-            md_content += f"🆔 {self.author.username}\n"
-        md_content += f"📅 {self.info.get_formatted_time()}\n"
+            md_content = f"🆔 {self.author.username}\n"
+        md_content += f"🔃 转发自 #{self.info.source_channel.name}\n"
         # 添加分割线
-        md_content += "![分割线 #1320 #130](https://i0.hdslb.com/bfs/article/02db465212d3c374a43c60fa2625cc1caeaab796.png@progressive.webp)\n"
+        md_content += "==============\n"
         # 添加文字与图片
         if self.content.text:
             md_content += self.content.text + "\n"
@@ -64,6 +63,7 @@ class Upload(RawUpload):
             for per_url in img_urls:
                 img_w, img_h = await get_img_size(per_url)
                 md_content += f"![图片 #{img_w}px #{img_h}px]({per_url})\n"
+        print(md_content)
 
         return md_content
 
@@ -120,10 +120,6 @@ class UploadInfo(BaseModel):
     """发布者昵称"""
     upload_time: datetime = Field(default_factory=datetime.now)
     """上传时间"""
-
-    def get_formatted_time(self) -> str:
-        """获取格式化时间（年-月-日 小时：分钟）"""
-        return self.upload_time.strftime(r"%Y-%m-%d %H:%M")
 
 
 @dataclass(eq=True, frozen=True)
