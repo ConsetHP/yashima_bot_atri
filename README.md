@@ -21,13 +21,12 @@ A QQ-bot that dedicates to a specific QQ channel, originated from [kusa_bot](htt
 
 ## Features
 
-- scrape specified website regularly
+- subscribe to weibo users and distribute their posts to qq guild
 - use queue while sending messages to avoid getting banned
 - send wordcloud images regularly
-- customize wordcloud generated image's appearance
 - send post to forum channels in chat channel
 - transfer qq's mini-app cards into user-friendly urls
-- recover images that are recalled by tencent's cencorship system
+- notify in channels when message is recalled by guild system
 - synchronize chat messages between guild channel and minecraft server
 
 ## Quick Guide
