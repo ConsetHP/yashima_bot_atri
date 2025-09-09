@@ -23,7 +23,7 @@ from . import (  # noqa: E402
     wrdcld,
     clock,
     send,
-    guild_plan,
+    guild_analysis,
     forum,
 )
 from .send import (  # noqa: E402
@@ -91,7 +91,7 @@ __all__ = [
     "minecraft",
     "database",
     "clock",
-    "guild_plan",
+    "guild_analysis",
     "send",
     "utils",
     "forum",

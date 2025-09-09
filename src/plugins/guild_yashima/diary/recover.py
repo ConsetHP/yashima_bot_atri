@@ -1,4 +1,5 @@
 import json
+import re
 
 from datetime import datetime
 
@@ -9,6 +10,7 @@ from nonebot.adapters.onebot.v11 import MessageSegment, ActionFailed
 from nonebot_plugin_guild_patch import GuildMessageEvent, GuildChannelRecallNoticeEvent
 from nonebot.params import EventMessage
 from nonebot.matcher import Matcher
+from nonebot.typing import T_State
 
 from .utils import parse_tencent_link_card
 from ..utils import get_config
@@ -91,33 +93,47 @@ async def resend_system_recalled_img_handle(_: Matcher, event: GuildMessageEvent
     #     await send_msgs(event.channel_id, to_send)
 
 
-async def notify_system_recalling_handle(
-    matcher: Matcher, event: GuildChannelRecallNoticeEvent
-):
-    """主动提醒吞消息行为"""
-    # 检查被撤回消息的发送者
-    try:
-        msg = await get_bot(get_config()["general"]["bot_id"]).get_guild_msg(
-            message_id=event.message_id, no_cache=False
-        )
-        logger.info(f"频道用户 {msg['sender']['nickname']} 的消息被系统撤回")
+def extract_cq_image_url(cq_code: str) -> str | None:
+    """
+    从 [CQ:image,...,url=xxx] 中提取 url 内容
+    """
+    match = re.search(r"url=([^,\]]+)", cq_code)
+    if match:
+        return match.group(1)
+    return None
 
-        # 被撤回的是机器人自己的消息则不提醒
-        if msg["sender"]["tiny_id"] == str(get_config()["general"]["bot_tiny_id"]):
-            matcher.finish()
-    except ActionFailed as af:
-        logger.warning(f"撤回消息详情获取错误：{af}")
 
-        # 确保不在半夜刷屏
-        current_time = datetime.now()
-        if is_silent_period(current_time):
-            await matcher.finish()
+def do_notify_system_recalling(notify_recalling: type[Matcher]):
+    @notify_recalling.handle()
+    async def notify_system_recalling(
+        event: GuildChannelRecallNoticeEvent, state: T_State
+    ):
+        """主动提醒系统撤回消息行为"""
+        # 检查被撤回消息的发送者
+        try:
+            msg = await get_bot(get_config()["general"]["bot_id"]).get_guild_msg(
+                message_id=event.message_id, no_cache=False
+            )
+            logger.info(f"频道用户 {msg['sender']['nickname']} 的消息被系统撤回")
+            msg_content: str = msg["message"]
+            logger.info(f"消息内容：{msg_content}")
 
-    # 不在测试频道提醒
-    if str(event.channel_id) == get_config()["debug"]["test_channel_id"]:
-        await matcher.finish()
+            # 被撤回的是机器人自己的消息则不提醒
+            if msg["sender"]["tiny_id"] == str(get_config()["general"]["bot_tiny_id"]):
+                await notify_recalling.finish()
+        except ActionFailed as af:
+            logger.warning(f"撤回消息详情获取错误：{af}")
 
-    await send_msgs(event.channel_id, "藤子的大手 撤回了一条消息")
+            # 确保不在半夜刷屏
+            current_time = datetime.now()
+            if is_silent_period(current_time):
+                await notify_recalling.finish()
+
+        # 不在测试频道提醒
+        if str(event.channel_id) == get_config()["debug"]["test_channel_id"]:
+            await notify_recalling.finish()
+        await send_msgs(event.channel_id, "藤子的大手 撤回了一条消息")
+        await notify_recalling.finish()
 
 
 def is_silent_period(current_time: datetime) -> bool:

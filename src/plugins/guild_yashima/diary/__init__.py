@@ -11,7 +11,7 @@ from .record import save_received_guild_msg_handle  # noqa: E402
 from .recover import (  # noqa: E402
     resend_pc_unreadable_msg_handle,
     resend_system_recalled_img_handle,
-    notify_system_recalling_handle,
+    do_notify_system_recalling,
     is_system_operator_recall,
 )
 
@@ -26,6 +26,5 @@ recover_last_img = on_fullmatch(
 )
 
 # 标准cqhttp并不会上报系统撤回事件，仅适用于Hyper魔改版的cqhttp
-recall_msg_notice = on_notice(
-    rule=is_system_operator_recall, handlers=[notify_system_recalling_handle]
-)
+recall_msg_notice = on_notice(rule=is_system_operator_recall)
+do_notify_system_recalling(recall_msg_notice)

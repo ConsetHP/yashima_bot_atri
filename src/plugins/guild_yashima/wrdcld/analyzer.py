@@ -32,7 +32,7 @@ def anti_repeat_process(msg: str) -> str:
 def pre_process(msg: str) -> str:
     """对消息进行预处理"""
     # 去除常见机器人指令
-    msg = remove_bot_command(msg)
+    msg = remove_bot_command_prefix(msg)
     # 去除使用了b站复制链接功能产生的消息
     msg = re.sub(r"^【.+?-哔哩哔哩】 https://b23\.tv/\w+$", "", msg)
     # 去除网址
@@ -54,10 +54,12 @@ def pre_process(msg: str) -> str:
     return msg
 
 
-def remove_bot_command(msg: str) -> str:
-    """删除用户调用bot指令，例：/打卡"""
+def remove_bot_command_prefix(msg: str) -> str:
+    """删除以bot指令为开头的消息，例：/打卡"""
     if blacklist_bot_commands := get_config()["wordcloud"]["blacklist_bot_commands"]:
-        return "" if msg in blacklist_bot_commands else msg
+        for per_cmd in blacklist_bot_commands:
+            msg = "" if msg.startswith(per_cmd) else msg
+        return msg
     else:
         return msg
 
