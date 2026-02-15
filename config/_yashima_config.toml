@@ -1,63 +1,25 @@
 [general]
-bot_id = "114514"  # 机器人 QQ 号
-bot_tiny_id = "114514"  # CQ机器人的 tiny_id，与 QQ 号不通用，详见 https://docs.go-cqhttp.org/guild/#%E5%91%BD%E5%90%8D%E8%AF%B4%E6%98%8E
-bot_special_id = "114514"  # CQ机器人的频道 open_id，从官方机器人API获取，与 QQ 号、cqhttp 获取的tiny_id无关
-official_bot_id = "114514"  # QQ官方机器人的id, 与.env中的botid保持一致
-official_bot_open_id = "114514" # QQ官方机器人的频道 open_id
-send_failure_retry = 5  # 消息发送失败重试次数
-send_interval = 1.5  # 消息队列发送间隔（秒）
-domain_white_list = ["domain1.com", "domain2.com"]  # 防 URL 检测转换的域名白名单
-
-[auth]
-admin = [""] # 管理员ID
-
-[db]
-file = "yashima_guild.db"
-msg_save_days = 30
-
-[guild]
-id = "" # 频道ID
-clock_channel_id = "" # 自习室子频道ID
-clock_role_name = "自习中" # 打卡用户组名
-clock_overtime = 200 # 打卡自动签退时长，分钟
-
-[wordcloud]
-theme = "ave_mujica"  # 词云主题，可选：ave_mujica，classic
-stopwords_path = "config/stopwords.txt"
-font_path = "config/PingFangSC-Semibold.otf"  # 默认字体
-options = {}
-width = 1920
-height = 1920
-background_color = "white"
-colormap = "viridis"
-generation_threshold = 200  # 生成词云的聊天量阈值
-disable_channels = [123]  # 不启用的子频道ID列表
-anti_repeat_channels = "" # 暂时弃用
-blacklist_user_ids = ["144115218735425860", "144115218680952989"]  # 词云排除用户
-blacklist_channels = [1]  # 全屏词云排除列表
-blacklist_bot_commands = [" 打卡", " /打卡"]  # 词云排除bot指令
-overall_target_channel = 123  # 全频词云发送子频道ID
-
-[minecraft]
-minecraft_channel_id = "123123123"  # Minecraft、QQ 互通聊天频道ID
-server_name = "Server"  # 服务器名称，应与 .env 文件中ws配置保持同步
-minecraft_message_accent = "说："  # 服务器聊天消息修饰
-blacklist_mc_message = []  # MC消息词语黑名单
-
-[subscribe]
-text_to_image = false  # 发送消息时将文本转换成图片（没啥用，因为频道里的图片也会被吞）
-browser_render_theme = true  # 是否使用环境中的浏览器渲染主题
-platform_theme = {"weibo" = "ht2i"}  # 为特定平台指定渲染主题（尽量不用basic主题，文字内容太长会被风控）
-
-[forum]
-default_channel_name = "abc"  # /一键发帖 默认发送的帖子区名称
+bot_qq_id = "114514"  # 机器人 QQ 号
+bot_admin_tiny_id = 1234567  # 机器人管理员 tiny id，与QQ号不通用，详见 https://docs.go-cqhttp.org/guild/#%E5%91%BD%E5%90%8D%E8%AF%B4%E6%98%8E
 
 [notice]
-user = "114514@example.com"  # 通知邮箱
-host = "smtp.example.com"  # 通知邮箱对应的smtp服务器域名
-port = 233  # smtp服务器端口
-key = "exampleabcd"  # SMTP服务器授权码
-cd = 10  # 断连通知冷却时间，单位：秒。断连后在该时间内重连则不通知
+user = "1234@abcd.com"  # 通知邮箱
+host = "smtp.abcd.com"  # 通知邮箱对应的SMTP服务器域名
+port = 123  # SMTP服务器端口
+key = "abcdefg123"  # SMTP服务器授权码
 
-[debug]
-test_channel = ""  # 测试用的频道ID
+[db]
+file_name = "xxx.db"  # 数据库名称
+
+[analyzer]
+target_group = 1234567  # 要分析的群的群号
+report_title = "每日报告"  # 报告的标题
+big_banner = true  # 是否启用大banner
+week_bar_plot = true  # 是否启用周柱状表分析
+day_bar_plot = true  # 是否启用日柱状表分析
+
+[sender]
+message_send_interval = 2  # 消息发送间隔，单位：秒
+message_send_retry = 10  # 发送失败后重试次数
+target_guild = "12345"  # 要发送消息的频道的频道号
+target_group = 1234567  # 要发送消息的群的群号
