@@ -6,6 +6,7 @@
 </p>
 
 ![GitHub License](https://img.shields.io/github/license/ConsetHP/yashima_bot_atri)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![Static Badge](https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=ffdf76)
 [![qq-guild](https://img.shields.io/static/v1?label=QQ%E9%A2%91%E9%81%93&message=840Headquarter&color=blue)](https://pd.qq.com/s/hfdjwjoif)
 
