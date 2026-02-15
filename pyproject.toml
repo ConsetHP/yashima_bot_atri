@@ -33,3 +33,7 @@ plugin_dirs = ["src/plugins"]
 
 # 要加载的 NoneBot 内置插件列表
 builtin_plugins = ["echo"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"

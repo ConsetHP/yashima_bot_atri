@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>高性能ですから！</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        {% filter indent(6) %}
+        {%- include "style.css" -%}
+        {% endfilter %}
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ data.title.title }}</h1>
+            <div class="date">更新于 {{ data.title.built_date }} {{ data.title.built_time }}</div>
+        </div>
+        <div class="content">
+            <div class="top-section full-width-section">
+                <h2 class="section-title">ℹ️ 基础统计</h2>
+                {% if data.big_banners %}
+                    {% for per_banner in data.big_banners %}
+                        {% if per_banner.description == "最活跃时段" %}
+                            <div class="active-period">
+                                <div class="time">{{per_banner.content}}</div>
+                                <div class="label">最活跃时段</div>
+                            </div>
+                        {% else %}
+                            <div class="active-channel">
+                                <div class="channel">{{per_banner.content}}</div>
+                                <div class="label">参与人数</div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- 活跃度可视化部分 -->
+            {% if data.bar_plots %}
+                {% for per_plot in data.bar_plots %}
+                    <div class="activity-chart-container">
+                        <div class="chart-header">
+                            <div class="chart-title-wrapper">
+                                <div class="chart-subtitle">{{ per_plot.head.description }}</div>
+                                <div class="chart-title">{{ per_plot.head.content }}</div>
+                            </div>
+                            <div class="chart-trend">{{ per_plot.head.trend }}</div>
+                        </div>
+                        {% for per_container in per_plot.body.bar_containers %}
+                            <div class="hour-bar-container">
+                                <span class="week-label">{{ per_container.time_label }}</span>
+                                <div class="bar-wrapper">
+                                    <div class="bar" style="width: {{ per_container.percentage }}%;">
+                                        {% for per_bar in per_container.bar %}
+                                            <div class="seg"
+                                            style="
+                                                flex-grow: {{ per_bar.ratio }};
+                                                background:
+                                                {% if per_bar.type == 'text' %}
+                                                    #6E78FF
+                                                {% elif per_bar.type == 'image' %}
+                                                    #B58EFF
+                                                {% else %}
+                                                    #F8B0FF
+                                                {% endif %}
+                                            ">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% if per_container.bar_width %}
+                                    <span class="hourly-value-outside">{{ per_container.bar_width }}</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <div class="legend-container">
+                            {% for per_legend in per_plot.body.legend %}
+                            <div class="legend">
+                                <div class="legend-circle"
+                                style="
+                                    background:
+                                    {% if per_legend.type == 'text' %}
+                                        #6E78FF
+                                    {% elif per_legend.type == 'image' %}
+                                        #B58EFF
+                                    {% else %}
+                                        #F8B0FF
+                                    {% endif %}
+                                ">
+                                </div>
+                                <span class="legend-label">
+                                    {% if per_legend.type == "text" %}
+                                        文字
+                                    {% elif per_legend.type == 'image' %}
+                                        图片
+                                    {% else %}
+                                        其他
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if per_plot.foot %}
+                            <div class="chart-footer">
+                                <div class="total">{{ per_plot.foot.description }}</div>
+                                <div class="total-value">{{ per_plot.foot.content }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="footer">
+            由 ATRI 生成 | {{ data.title.built_date }} | 无法保证bot在线稳定，部分聊天数据可能不完整 | html 模板部分参考 AstrBot QQ 群日常分析插件<br>
+        </div>
+    </div>
+</body>
+
+</html>
