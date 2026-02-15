@@ -1,0 +1,23 @@
+name: Ruff-Lint
+
+on:
+  push:
+    branches:
+      -main
+  pull_request:
+    paths:
+      - "src/plugins/**"
+      - "tests/**"
+      - "bot.py"
+
+jobs:
+  ruff:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Ruff Lint
+        uses: astral-sh/ruff-action@v3.6.1
+        with:
+          src: >-
+            src/plugins/
+            tests/
