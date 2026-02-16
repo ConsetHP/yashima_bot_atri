@@ -65,13 +65,8 @@ class ReportAnalyzer:
         self, week_start: datetime, week_end: datetime
     ) -> int:
         """一周内每日消息的平均值"""
-        query = database.get_grouped_message_counts_by_time(
-            week_start, week_end, delta=timedelta(days=1)
-        )
-        total_count = 0
-        for per_day in query:
-            total_count += per_day.count
-        return int(total_count / 7)
+        total_count = database.get_group_message_between(week_start, week_end).count()
+        return int(total_count / int((week_end - week_start).days))
 
     def analyze_active_users_today(self) -> int:
         """今日消息数最多的用户"""
