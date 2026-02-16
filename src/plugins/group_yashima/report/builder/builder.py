@@ -44,7 +44,7 @@ class ReportBuilder:
     def _get_other_type_counts(self, counter: Counter) -> int:
         total = 0
         for segment_type, count in counter.items():
-            if segment_type != "text" or segment_type != "image":
+            if segment_type not in ["text", "image"]:
                 total += count
         return total
 
