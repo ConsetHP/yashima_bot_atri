@@ -115,9 +115,7 @@ class ReportBuilder:
         today_start = datetime.now().replace(hour=0, minute=0, second=0)
         today_end = datetime.now() + timedelta(days=1)
         this_week_start = today_start - timedelta(days=today_start.weekday())  # Monday
-        this_week_end = this_week_start + timedelta(
-            days=6, hours=23, minutes=59, seconds=59
-        )  # Sunday
+        this_week_end = this_week_start + timedelta(days=7)  # Sunday
 
         # bar plot head
         this_week_average = self.analyzer.analyze_average_message_in_week(
