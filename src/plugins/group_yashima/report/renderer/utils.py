@@ -21,7 +21,8 @@ async def html_to_pic(
     """html转图片，使用about:blank而不是file://路径"""
     async with get_new_page(device_scale_factor, **kwargs) as page:
         await page.goto("about:blank")
-        await page.set_content(html, wait_until="networkidle")
+        # wait_until="networkidle"容易导致超时
+        await page.set_content(html, wait_until="domcontentloaded")
         await page.wait_for_timeout(wait)
         return await page.screenshot(
             full_page=True,
