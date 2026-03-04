@@ -46,18 +46,16 @@ class ReportAnalyzer:
             msg_type = msg[0]["type"]
         except KeyError:
             if msg[0].get("messages") is not None:
-                # 合并转发消息，需要另外处理
+                # TODO: 合并转发消息，需要另外处理
                 msg_type = "text"
             else:
                 raise KeyError(f"Invalid msg: {msg}")
         return msg_type
 
-    def analyze_busiest_time_today(self) -> int:
-        """今日消息数最多的时间段"""
-        today_start = datetime.now().replace(hour=0, minute=0, second=0)
-        today_end = datetime.now().replace(hour=23, minute=59, second=59)
+    def analyze_busiest_time_in(self, day_start, day_end) -> int:
+        """一日内消息数最多的时间段"""
         query = database.get_grouped_message_counts_by_time(
-            today_start, today_end
+            day_start, day_end
         ).order_by(SQL("count").desc())
         if not query.first():
             return 0
@@ -70,12 +68,10 @@ class ReportAnalyzer:
         total_count = database.get_group_message_between(week_start, week_end).count()
         return int(total_count / int((week_end - week_start).days))
 
-    def analyze_active_users_today(self) -> int:
-        """今日消息数最多的用户"""
-        today_start = datetime.now().replace(hour=0, minute=0, second=0)
-        today_end = datetime.now().replace(hour=23, minute=59, second=59)
+    def analyze_daily_active_user(self, day_start, day_end) -> int:
+        """一日内的活跃用户"""
         query = database.get_active_group_user_between(
-            today_start, today_end, group_id=str(get_config().analyzer.target_group)
+            day_start, day_end, group_id=str(get_config().analyzer.target_group)
         )
         return query.count()
 
