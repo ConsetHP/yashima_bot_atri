@@ -59,6 +59,8 @@ class ReportAnalyzer:
         query = database.get_grouped_message_counts_by_time(
             today_start, today_end
         ).order_by(SQL("count").desc())
+        if not query.first():
+            return 0
         return int(query.first().hour)
 
     def analyze_average_message_in_week(
