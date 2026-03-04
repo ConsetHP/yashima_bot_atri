@@ -1,11 +1,16 @@
-from .builder import ReportBuilder
+from typing import Optional
+from datetime import datetime
+
+from .builder import DailyReportBuilder
 
 from src.plugins.group_yashima.config import get_config
 
 
 class ReportManager:
-    def __init__(self):
-        self.builder = ReportBuilder()
+    def __init__(self, day_start: Optional[datetime] = None):
+        if not day_start:
+            day_start = datetime.now().replace(hour=0, minute=0, second=0)
+        self.builder = DailyReportBuilder(day_start)
 
     def build_report_data(self):
         if get_config().analyzer.big_banner:
