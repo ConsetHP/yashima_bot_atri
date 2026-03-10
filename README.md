@@ -28,6 +28,11 @@ A QQ-bot that dedicates to a specific QQ channel, originated from [kusa_bot](htt
 
 See [NoneBot Docs](https://v2.nonebot.dev/) | [QueQiao Docs](https://github.com/17TheWord/QueQiao/wiki)
 
+After installed NoneBot:
+- Run `pip install -r requierments.txt`
+- Run `python -m playwright install chromium-headless-shell`
+- Dupliacate file `config/_yashima_config.toml` and rename it with `yashima_config.toml`
+
 ## Special thanks
 
 - [NoneBot](https://github.com/nonebot/nonebot2) : multi-platform chatbot framework
