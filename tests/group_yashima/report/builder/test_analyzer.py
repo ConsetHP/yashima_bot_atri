@@ -51,7 +51,7 @@ class TestAnalyzer:
         today_end = datetime.now().replace(hour=23, minute=23, second=59)
 
         patch_get_group_message_between(mocker)
-        counters = ReportAnalyzer().get_message_type_counts_between(
+        counters = ReportAnalyzer("").get_message_type_counts_between(
             today_start, today_end
         )
 
@@ -70,7 +70,7 @@ class TestAnalyzer:
         today_end = datetime.now().replace(hour=23, minute=23, second=59)
 
         patch_get_labeled_message_content_by_time(mocker)
-        counters = ReportAnalyzer().get_message_type_counts_between(
+        counters = ReportAnalyzer("").get_message_type_counts_between(
             today_start, today_end, group_by=timedelta(hours=1)
         )
 

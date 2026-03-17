@@ -25,9 +25,12 @@ async def test_get_group_message_between(
     time_machine.move_to(today, tick=False)
     await save_fake_message(987, 456, "hello", mocker)
 
+    await save_fake_message(999, 476, "hi", mocker)
+
     today_messages = analyzer_operator.get_group_message_between(
         today.replace(hour=0, minute=0, second=0),
         today.replace(hour=23, minute=59, second=59),
+        "987",
     )
 
     assert len(today_messages) == 1
@@ -36,6 +39,7 @@ async def test_get_group_message_between(
     yesterday_messages = analyzer_operator.get_group_message_between(
         yesterday.replace(hour=0, minute=0, second=0),
         yesterday.replace(hour=23, minute=59, second=59),
+        "987",
     )
 
     assert len(yesterday_messages) == 1
