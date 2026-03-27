@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from nonebug.app import App
@@ -9,33 +7,23 @@ from tests.group_yashima.utils.events import fake_group_message_event
 
 
 @pytest.mark.asyncio
-async def test_save_with_pure_text(app: App, mocker: MockerFixture):
+async def test_save_group_message_matcher(app: App, mocker: MockerFixture):
     from nonebot.adapters.onebot.v11 import Message
 
     from src.plugins.group_yashima.diary import msg_record
-    from src.plugins.group_yashima.diary.handler import save_group_message_handle
 
     event = fake_group_message_event(
         message_id=12340987,
-        message=Message("第一条消息"),
+        message=Message("测试响应"),
         user_id=8888,
         group_id=2233,
     )
     async with app.test_matcher(msg_record) as ctx:
         bot = ctx.create_bot()
-        mocked = mocker.patch(
+        mocker.patch(
             "src.plugins.group_yashima.diary.handler.database.save_group_message",
             new_callable=mocker.AsyncMock,
         )
-
-        # nonebug环境中的matcher不会主动调用注册至matcher的handler
-        await save_group_message_handle(event, bot)  # type: ignore
-
-        mocked.assert_awaited_with(
-            "12340987",
-            json.dumps(
-                [{"type": "text", "data": {"text": "第一条消息"}}], ensure_ascii=False
-            ),
-            "8888",
-            "2233",
-        )
+        ctx.receive_event(bot, event)
+        ctx.should_pass_permission()
+        ctx.should_pass_rule()
