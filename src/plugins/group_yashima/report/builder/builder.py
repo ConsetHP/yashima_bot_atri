@@ -16,9 +16,9 @@ from .analyzer import ReportAnalyzer
 
 
 class DailyReportBuilder:
-    def __init__(self, day_start: datetime):
+    def __init__(self, day_start: datetime, target_group: str):
         self.report = ReportData()
-        self.analyzer = ReportAnalyzer()
+        self.analyzer = ReportAnalyzer(target_group)
         self.day_start = day_start
         self.day_end = day_start + timedelta(days=1)
 

@@ -26,7 +26,7 @@ class WeekDays(Enum):
 
 
 class ReportAnalyzer:
-    def __init__(self):
+    def __init__(self, target_group: str):
         self.weekdays_nums_map = {
             0: WeekDays.MONDAY.value,
             1: WeekDays.TUESDAY.value,
@@ -36,6 +36,7 @@ class ReportAnalyzer:
             5: WeekDays.SATURDAY.value,
             6: WeekDays.SUNDAY.value,
         }
+        self.target_group = target_group
 
     def _deserialize_msg_and_get_type(self, raw_msg: str) -> str:
         import json
@@ -65,7 +66,9 @@ class ReportAnalyzer:
         self, week_start: datetime, week_end: datetime
     ) -> int:
         """一周内每日消息的平均值"""
-        total_count = database.get_group_message_between(week_start, week_end).count()
+        total_count = database.get_group_message_between(
+            week_start, week_end, self.target_group
+        ).count()
         return int(total_count / int((week_end - week_start).days))
 
     def analyze_daily_active_user(self, day_start, day_end) -> int:
@@ -106,7 +109,9 @@ class ReportAnalyzer:
                 message_type_counts.append(Counter(grouped_msgs[per_key]))
 
         else:
-            messages = database.get_group_message_between(start_time, end_time).dicts()
+            messages = database.get_group_message_between(
+                start_time, end_time, self.target_group
+            ).dicts()
 
             message_type_counts = [
                 Counter(
@@ -119,7 +124,11 @@ class ReportAnalyzer:
     def get_message_count_between(
         self, start_time: datetime, end_time: datetime
     ) -> str:
-        return str(database.get_group_message_between(start_time, end_time).count())
+        return str(
+            database.get_group_message_between(
+                start_time, end_time, self.target_group
+            ).count()
+        )
 
     def calculate_trend_percentage(self, previous_count: int, last_count: int) -> int:
         return int((previous_count / last_count - 1) * 100)

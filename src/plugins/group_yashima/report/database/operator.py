@@ -2,12 +2,12 @@ from datetime import datetime, timedelta
 
 from peewee import ModelSelect, fn
 
-from ...diary.database.model import GroupMessage, GroupUser
+from ...diary.database.model import GroupMessage, GroupUser, Group
 
 
 class DBOperator:
     def get_group_message_between(
-        self, start_time: datetime, end_time: datetime
+        self, start_time: datetime, end_time: datetime, group_id: str
     ) -> ModelSelect:
         import operator
         from functools import reduce
@@ -15,10 +15,12 @@ class DBOperator:
         expressions = [
             (GroupMessage.record_time >= start_time),
             (GroupMessage.record_time < end_time),
+            (Group.group_id == group_id),
         ]
-        return GroupMessage.select().where(
-            reduce(operator.and_, expressions)
-        )  # TODO: 添加group参数，只获取指定群的消息
+
+        return (
+            GroupMessage.select().join(Group).where(reduce(operator.and_, expressions))
+        )
 
     def _validate_delta(
         self, start_time: datetime, end_time: datetime, delta: timedelta

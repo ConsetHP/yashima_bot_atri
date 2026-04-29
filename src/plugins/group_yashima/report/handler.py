@@ -42,7 +42,7 @@ async def send_report(
         guild_id=get_config().sender.target_guild,
         channel_id=str(event.channel_id),
     )
-    report = await get_daily_report(day_start)
+    report = await get_daily_report(str(get_config().analyzer.target_group), day_start)
     await send_msgs(
         target,
         msg=Message(MessageSegment.image(report)),
