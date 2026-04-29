@@ -42,6 +42,51 @@ async def test_save_with_pure_text(app: App, mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
+async def test_save_with_reply(app: App, mocker: MockerFixture):
+    from nonebot.adapters.onebot.v11 import Message
+    from nonebot.adapters.onebot.v11.event import Reply, Sender
+
+    from src.plugins.group_yashima.diary import msg_record
+    from src.plugins.group_yashima.diary.handler import save_group_message_handle
+
+    event = fake_group_message_event(
+        message_id=12340987,
+        message=Message("回复4321的消息"),
+        user_id=8888,
+        group_id=2233,
+        reply=Reply(
+            time=1767651105,
+            message_type="group",
+            message_id=7986543,
+            real_id=100,
+            sender=Sender(user_id=4321, nickname="4321"),
+            message=Message("被回复的消息"),
+        ),
+    )
+    async with app.test_matcher(msg_record) as ctx:
+        bot = ctx.create_bot()
+        mocked = mocker.patch(
+            "src.plugins.group_yashima.diary.handler.database.save_group_message",
+            new_callable=mocker.AsyncMock,
+        )
+
+        await save_group_message_handle(event, bot)  # type: ignore
+
+        mocked.assert_awaited_with(
+            "12340987",
+            json.dumps(
+                [
+                    {"type": "reply", "data": {"id": "7986543"}},
+                    {"type": "text", "data": {"text": "回复4321的消息"}},
+                ],
+                ensure_ascii=False,
+            ),
+            "8888",
+            "2233",
+        )
+
+
+@pytest.mark.asyncio
 async def test_save_with_single_image(app: App, mocker: MockerFixture):
     from nonebot.adapters.onebot.v11 import Message, MessageSegment
 

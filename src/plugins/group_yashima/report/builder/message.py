@@ -6,7 +6,7 @@ from nonebot.adapters.onebot.v11 import Message, MessageSegment
 
 
 class MessageFactory:
-    _processors: dict[str, type["SegmentProcessor"]]
+    _processors: dict[str, type["SegmentProcessor"]] = {}
 
     @classmethod
     def register(cls, processor: type["SegmentProcessor"], msg_type: str):
