@@ -12,6 +12,10 @@ from tests.group_yashima.utils.patches import (
 async def test_get_group_message_between(
     app: App, time_machine: TimeMachineFixture, mocker: MockerFixture
 ):
+    """
+    由于需要的context相同
+    同时测get_group_message_between和get_group_message_with_username_between
+    """
     from src.plugins.group_yashima.report.database import (
         database as analyzer_operator,
     )
@@ -33,10 +37,28 @@ async def test_get_group_message_between(
         "987",
     )
 
+    today_messages_with_user = (
+        analyzer_operator.get_group_message_with_username_between(
+            today.replace(hour=0, minute=0, second=0),
+            today.replace(hour=23, minute=59, second=59),
+            "987",
+        )
+    )
+
     assert len(today_messages) == 1
     assert today_messages[0].content == "hello"
 
+    assert len(today_messages_with_user) == 1
+    assert today_messages_with_user[0].content == "hello"
+    assert today_messages_with_user[0].user.nickname == "card_456"
+    assert today_messages_with_user[0].user.user.nickname == "haha_456"
+
     yesterday_messages = analyzer_operator.get_group_message_between(
+        yesterday.replace(hour=0, minute=0, second=0),
+        yesterday.replace(hour=23, minute=59, second=59),
+        "987",
+    )
+    yesterday_messages_with_user = analyzer_operator.get_group_message_between(
         yesterday.replace(hour=0, minute=0, second=0),
         yesterday.replace(hour=23, minute=59, second=59),
         "987",
@@ -44,6 +66,33 @@ async def test_get_group_message_between(
 
     assert len(yesterday_messages) == 1
     assert yesterday_messages[0].content == "haha"
+
+    assert len(yesterday_messages_with_user) == 1
+    assert yesterday_messages_with_user[0].user.nickname == "card_123"
+    assert yesterday_messages_with_user[0].user.user.nickname == "haha_123"
+
+
+async def test_get_group_message_with_username_by_msg_id(
+    app: App, mocker: MockerFixture
+):
+    from src.plugins.group_yashima.report.database import (
+        database as processor_operator,
+    )
+
+    msg_id_1 = await save_fake_message(987, 123, "haha", mocker)
+    msg_id_2 = await save_fake_message(456, 321, "another haha", mocker)
+
+    msg_1 = processor_operator.get_group_message_with_username_by_msg_id(msg_id_1)
+
+    assert len(msg_1) == 1
+    assert msg_1.first().user.nickname == "card_123"
+    assert msg_1.first().user.user.nickname == "haha_123"
+
+    msg_2 = processor_operator.get_group_message_with_username_by_msg_id(msg_id_2)
+
+    assert len(msg_2) == 1
+    assert msg_2.first().user.nickname == "card_321"
+    assert msg_2.first().user.user.nickname == "haha_321"
 
 
 async def test_get_active_group_user_between(

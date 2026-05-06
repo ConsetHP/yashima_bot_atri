@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from peewee import ModelSelect, fn
 
-from ...diary.database.model import GroupMessage, GroupUser, Group
+from ...diary.database.model import GroupMessage, GroupUser, Group, QQUser
 
 
 class DBOperator:
@@ -20,6 +20,37 @@ class DBOperator:
 
         return (
             GroupMessage.select().join(Group).where(reduce(operator.and_, expressions))
+        )
+
+    def get_group_message_with_username_between(
+        self, start_time: datetime, end_time: datetime, group_id: str
+    ) -> ModelSelect:
+        return (
+            GroupMessage.select(
+                GroupMessage.content,
+                GroupUser.nickname,
+                QQUser.nickname,
+            )
+            .join_from(GroupMessage, GroupUser)
+            .join(QQUser)
+            .join_from(GroupMessage, Group)
+            .where(
+                (Group.group_id == group_id)
+                & (GroupMessage.record_time >= start_time)
+                & (GroupMessage.record_time < end_time)
+            )
+        )
+
+    def get_group_message_with_username_by_msg_id(self, msg_id: str) -> ModelSelect:
+        return (
+            GroupMessage.select(
+                GroupMessage.content,
+                GroupUser.nickname,
+                QQUser.nickname,
+            )
+            .join_from(GroupMessage, GroupUser)
+            .join(QQUser)
+            .where((GroupMessage.message_id == msg_id))
         )
 
     def _validate_delta(

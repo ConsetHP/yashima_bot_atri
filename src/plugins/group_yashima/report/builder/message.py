@@ -4,6 +4,8 @@ from string import Template
 
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 
+from ..database.operator import database
+
 
 class MessageFactory:
     _processors: dict[str, type["SegmentProcessor"]] = {}
@@ -67,6 +69,35 @@ class AtProcessor(SegmentProcessor):
         return ""
 
 
+class ReplyProcessor(SegmentProcessor):
+    """reply处理"""
+
+    _msg_type = "reply"
+
+    async def process(self, message: dict | MessageSegment) -> str:
+        if isinstance(message, MessageSegment):
+            msg_id = message.data["id"]
+        else:
+            msg_id = message["data"]["id"]
+        replied = database.get_group_message_with_username_by_msg_id(msg_id)
+        if not replied:
+            # TODO: cqhttp获取
+            return ""
+        user_name = (
+            replied.first().user.nickname
+            if replied.first().user.nickname
+            else replied.first().user.user.nickname
+        )
+        short_content = (
+            replied.first().content[:20] + "..."
+            if replied.first().content > 20
+            else replied.first().content
+        )
+        return Template("回复了用户[$user_name]的消息[$content]：").substitute(
+            user_name=user_name, content=short_content
+        )
+
+
 class QQFaceProcessor(SegmentProcessor):
     """QQ表情处理"""
 
@@ -115,7 +146,7 @@ class JsonProcessor(SegmentProcessor):
     async def process(self, message: dict | MessageSegment) -> str:
         # json可能存在多个不同的miniapp版本，需要小心
         # title = message["data"]["meta"]["desc"]
-        return ""
+        return "[QQ小程序]"
 
 
 class ForwardProcessor(SegmentProcessor):

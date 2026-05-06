@@ -9,24 +9,24 @@ class AdapterName(StrEnum):
 
 
 class SendTarget(BaseModel):
-    adapter: AdapterName
     bot_id: str
+    adapter: AdapterName
 
 
 class TargetQQGroup(SendTarget):
-    adapter: AdapterName = Field(default=AdapterName.one_bot_v11)
     bot_id: str
     group_id: int
+    adapter: AdapterName = Field(default=AdapterName.one_bot_v11)
 
 
 class TargetQQGuildOB11(SendTarget):
-    adapter: AdapterName = Field(default=AdapterName.one_bot_v11)
     bot_id: str
     guild_id: str
     channel_id: str
+    adapter: AdapterName = Field(default=AdapterName.one_bot_v11)
 
 
 class TargetQQGuildOfficial(SendTarget):
-    adapter: AdapterName = Field(default=AdapterName.qq)
     bot_id: str
     channel_id: str
+    adapter: AdapterName = Field(default=AdapterName.qq)
